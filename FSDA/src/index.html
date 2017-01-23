@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+<!--script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script-->
 <script>
   function doSearch(s) {
     if (event.keyCode == 13) {
@@ -33,9 +33,20 @@
   function doReset() {
     document.getElementById('confirm').innerHTML = "";
   }
+  function startRead() {
+    alert('trying..');
+    fn = document.getElementById('rankcsv').value;
+    alert(fn);
+    //var file = document.getElementById('rankcsv').files[0];
+    //if (file) {
+    //  alert('got file');
+    //}
+  }
 </script>
 </head>
 <body>
+  <input type="file" name="rankcsv" onchange='startRead(this)'><button onclick="startRead()">Go</button>
+  <hr>
   <table id="input" width="100%">
     <tr>
       <td>
