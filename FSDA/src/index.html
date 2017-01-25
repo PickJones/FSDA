@@ -4,37 +4,36 @@
 <!--script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script-->
 <!--script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script-->
 <script src="jquery-3.1.1.js"></script>
+<script src="jquery-csv.js"></script>
 <script>
+  //var playerData = [[][]];
   $(function() {
     $('#srchbox').keyup(function() { doSearch(document.getElementById('srchbox').value); });
-    $('#rankcsv').bind('change', doSomething);
+    $('#rankcsv').bind('change', fileToArray);
   });
-  function doSomething(f) {
-$('#output').append('doSomething('+f+')<br>');
+  function fileToArray(f) {
     var files = f.target.files;
     var file = files[0];
-$('#output').append(file.fileName + "<br>");
     var reader = new FileReader();
     reader.readAsText(file);
-$('#output').append('readAsText<br>');
     reader.onload = function(event) {
-$('#output').append('onload<br>');
       var csv = event.target.result;
-$('#output').append('csv<br>');
-      //var data = $.csv.toArrays(csv);
-      var data = $.csv.toArrays('a,b,c,d,e,f');
-$('#output').append('data<br>');
+      playerData = $.csv.toArrays(csv);
       var html = '';
-$('#output').append('row in data<br>');
-      for (var row in data) {
-$('#output').append('row' + row + '<br>');
-        for (var item in data[row]) {
-$('#output').append('item' + item + '<br>');
-          html += '::' + data[row][item]+'::'
+      for (var row in playerData) {
+        $('#output').append('row' + row + '<br>');
+        for (var item in playerData[row]) {
+          $('#output').append('item' + item + '<br>');
+          html += '::' + playerData[row][item]+'::'
         }
         html += '<br>';
       }
       $('#outputcsv').html(html);
+      var arrayStats = '';
+      arrayStats += 'Imported ' + playerData.length + ' player(s)';
+      //arrayStats += '<br>';
+      //arrayStats += '# Columns = ' + playerData[0].length;
+      $('#fileStats').append(arrayStats);
     };
     reader.onerror = function() { alert('Unable to read ' + file.fileName); };
   }
@@ -66,13 +65,23 @@ $('#output').append('item' + item + '<br>');
     $('#confirm').empty();
   }
   function doReset() {
+    clearSearchBox()
+    $('#output').empty();
+    $('#outputcsv').empty();
+    $('#fileStats').empty();
+    var playerDataStats = '';
+    //playerData = [[][]];
+    playerDataStats += '# Rows = ' + playerData.length;
+    playerDataStats += '<br>';
+    playerDataStats += '# Columns = ' + playerData[0].length;
+    $('#fileStats').append(playerDataStats);
     $('#confirm').empty();
   }
 </script>
 </head>
 <body>
   <input type="file" name="rankcsv" id="rankcsv">
-  <button name="nothing" onclick="document.getElementById('output').innerHTML += 'nothing<br>'">Nothing</button>
+  <br><div id="fileStats"></div>
   <hr>
   <table id="input" width="100%">
     <tr>
@@ -100,15 +109,15 @@ $('#output').append('item' + item + '<br>');
   <table id="takenP">
   </table>
   <hr>
-  <table border="1"><tr><td>
-  <b>output</b><br>
-  <div id="output"></div>
-  </td><td>
+  <table border="1"><tr><td valign="top">
   <b>tmp</b><br>
   <div id="tmp"></div>
-  </td><td>
-  <b>tbd</b><br>
-  <div id="tbd"></div>
+  </td><td valign="top">
+  <b>output</b><br>
+  <div id="output"></div>
+  </td><td valign="top">
+  <b>outputcsv</b><br>
+  <div id="outputcsv"></div>
   </td></tr></table>
 </body>
 </html>
