@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="jquery-3.1.1.js"></script>
+<script src="jquery-csv.js"></script>
+<script>
+  var playerArray = [[]];
+  var players = [{}];
+  var cntr = {};
+  $(function() {
+    //$('#srchbox').keyup(function() { doSearch($('#srchbox').val(); });
+    $('#rankcsv').bind('change', prepareDA);
+  });
+  function prepareDA(f) {
+    $('#output').append('prepareDA()<br>');
+    
+    //load file into array
+    fileToArray(f);
+
+    //array to object
+    setTimeout(function() {
+      arrayToObject();
+    },1000);
+
+    //prepare html tables
+    setTimeout(function() {
+      prepareTables();
+    },2000);
+
+    //show all the players
+    setTimeout(function() {
+      displayPlayers();
+    },3000);
+
+    //inspect arry
+    //inspectArray();
+
+    //make position arrays
+    //setTimeout(function(){
+    //  positionArray();
+    //},1000);
+
+    //write available players
+    //setTimeout(function(){
+    //  writeAvailable();
+    //},2000);
+  }
+  function fileToArray(f) {
+    $('#output').append('fileToArray()<br>');
+    var files = f.target.files;
+    var file = files[0];
+    var reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = function(event) {
+      var csv = event.target.result;
+      playerArray = $.csv.toArrays(csv);
+    };
+    reader.onerror = function() { alert('Unable to read ' + file.fileName); };
+    $('#output').append('END fileToArray()<br>');
+  }
+  function arrayToObject() {
+    $('#output').append('arrayToObject()<br>');
+    for (var row in playerArray) {
+      if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
+        players.push({ 
+          status:"Available"
+         ,name:playerArray[row][0]
+         ,team:playerArray[row][1]
+         ,rank:parseInt(playerArray[row][3])
+         ,position:playerArray[row][2]
+         ,posrk:playerArray[row][2]+playerArray[row][3]
+         ,posrkz:playerArray[row][2]+("00"+playerArray[row][3]).slice(-3)
+        });
+        if (!cntr[playerArray[row][2]]) {
+          cntr[playerArray[row][2]] = {Available:0, Mine:0, Taken:0};
+        }
+      }
+    }
+    players.shift();
+    $('#output').append('playerArray.length=' + playerArray.length + '<br>');
+    $('#output').append('players.length=' + players.length + '<br>');
+    for (var p in cntr) {
+      $('#output').append(p + '|');
+    }
+    $('#output').append('<br>');
+    $('#fileStats').append('Imported ' + (players.length) + ' player(s)');
+    $('#output').append('END arrayToObject()<br>');
+  }
+  function prepareTables() {
+    $('#output').append('prepareTables()<br>');
+    th = '<tr>';
+    for (var p in cntr) {
+      th += '<td align="center"><b>' + p + '</b></td>';
+    }
+    th += '</tr>'
+    $('#tMine thead').append(th);
+    $('#tAvailable thead').append(th);
+    $('#tTaken thead').append(th);
+    tb = '<tr>';
+    for (var p in cntr) {
+      tb += '<td valign="top"><table border="1" id="tSTATUS' + p + '"><tbody></tbody></table></td>';
+    }
+    tb += '</tr>'
+    $('#tMine tbody').append(tb.replace('STATUS','Mine'));
+    $('#tAvailable tbody').append(tb.replace('STATUS','Available'));
+    $('#tTaken tbody').append(tb.replace('STATUS','Taken'));
+    $('#output').append('END prepareTables()<br>');
+  }
+  function displayPlayers() {
+    $('#output').append('displayPlayers()<br>');
+    for (var pos in cntr) {
+      cntr[pos]['Available']=0;
+      cntr[pos]['Mine']=0;
+      cntr[pos]['Taken']=0;
+    }
+    $('#output').append('--displayPlayers()<br>');
+    for (var row in players) {
+      cntr[players[row].position][players[row].status]++;
+      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(cntr[players[row].position][players[row].status], players[row]))
+    }
+    $('#output').append('END displayPlayers()<br>');
+  }
+  function getTableRow(c, p) {
+    var ret = '';
+    if ( !(c%2)) { 
+      ret += '<tr bgcolor="#d3d3d3"><td>'; 
+    } else {
+      ret += '<tr><td>'
+    }
+    ret += p.rank + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+    return ret;
+  }
+</script>
+</head>
+<body>
+  <input type="file" name="rankcsv" id="rankcsv">
+  <br><div id="fileStats"></div>
+  <hr><div id="output"></div><hr>
+  <input type="text" name="srchbox" id="srchbox" size=50>
+  <hr>
+  <b>SEARCH RESULTS</b>
+  <table id="tSearchResults" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>MY TEAM</b>
+  <table id="tMine" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>AVAILABLE</b>
+  <table id="tAvailable" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>TAKEN</b>
+  <table id="tTaken" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</body>
+</html>
