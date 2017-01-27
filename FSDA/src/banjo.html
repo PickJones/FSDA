@@ -7,8 +7,9 @@
   var playerArray = [[]];
   var players = [{}];
   var cntr = {};
+  $('#output').hide();
   $(function() {
-    //$('#srchbox').keyup(function() { doSearch($('#srchbox').val(); });
+    $('#srchbox').keyup(function() { doSearch($('#srchbox').val()); });
     $('#rankcsv').bind('change', prepareDA);
   });
   function prepareDA(f) {
@@ -22,6 +23,9 @@
       arrayToObject();
     },1000);
 
+    //inspect arry
+    //inspectArray();
+
     //prepare html tables
     setTimeout(function() {
       prepareTables();
@@ -31,19 +35,6 @@
     setTimeout(function() {
       displayPlayers();
     },3000);
-
-    //inspect arry
-    //inspectArray();
-
-    //make position arrays
-    //setTimeout(function(){
-    //  positionArray();
-    //},1000);
-
-    //write available players
-    //setTimeout(function(){
-    //  writeAvailable();
-    //},2000);
   }
   function fileToArray(f) {
     $('#output').append('fileToArray()<br>');
@@ -88,7 +79,7 @@
   }
   function prepareTables() {
     $('#output').append('prepareTables()<br>');
-    th = '<tr>';
+    var th = '<tr>';
     for (var p in cntr) {
       th += '<td align="center"><b>' + p + '</b></td>';
     }
@@ -96,21 +87,25 @@
     $('#tMine thead').append(th);
     $('#tAvailable thead').append(th);
     $('#tTaken thead').append(th);
-    tb = '<tr>';
+    var tb = '<tr>';
     for (var p in cntr) {
-      tb += '<td valign="top"><table border="1" id="tSTATUS' + p + '"><tbody></tbody></table></td>';
+      tb += '<td valign="top"><table id="tSTATUS' + p + '"><tbody></tbody></table></td>';
     }
     tb += '</tr>'
-    $('#tMine tbody').append(tb.replace('STATUS','Mine'));
-    $('#tAvailable tbody').append(tb.replace('STATUS','Available'));
-    $('#tTaken tbody').append(tb.replace('STATUS','Taken'));
+    //alert(tb.replace(/STATUS/g, 'Mine'));
+    $('#tMine tbody').append(tb.replace(/STATUS/g, 'Mine'));
+    $('#tAvailable tbody').append(tb.replace(/STATUS/g, 'Available'));
+    $('#tTaken tbody').append(tb.replace(/STATUS/g, 'Taken'));
     $('#output').append('END prepareTables()<br>');
   }
   function displayPlayers() {
-    $('#output').append('displayPlayers()<br>');
+    $('#output').append('displayPlayers(' + players.length + ')<br>');
     for (var pos in cntr) {
+      $('#tAvailable' + pos + ' tbody').empty();
       cntr[pos]['Available']=0;
+      $('#tMine' + pos + ' tbody').empty();
       cntr[pos]['Mine']=0;
+      $('#tTaken' + pos + ' tbody').empty();
       cntr[pos]['Taken']=0;
     }
     $('#output').append('--displayPlayers()<br>');
@@ -120,12 +115,59 @@
     }
     $('#output').append('END displayPlayers()<br>');
   }
+  function doSearch(s) {
+    $('#tSearchResults tbody').empty();
+    if (event.keyCode == 13) {
+      srchterm="";
+      $('#srchbox').val(srchterm);
+    } else {
+      srchterm = s;
+    }
+    if (srchterm.length > 0) {
+      var cnt = 0;
+      for (var row in players) {
+        if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
+          cnt++;
+          $('#tSearchResults tbody').append(getTableRow(cnt, players[row]));
+        }
+      }
+    }
+  }
+  function changeStatus(pr, s) {
+    var os = updateStatus(pr, s);
+    setTimeout(function() {
+      displayPlayers();
+    },500);
+    $('#srchbox').val('');
+    doSearch('');
+    $('#srchbox').focus();
+  }
+  function updateStatus(pr, s) {
+    var ret = '';
+    for (var row in players) {
+      if (players[row]['posrk'] == pr) {
+        $('#output').append('updaing ' + players[row]['name'] + '<br>')
+        ret = players[row]['status'];
+        players[row]['status'] = s;
+        return ret;
+      }
+    }
+  }
   function getTableRow(c, p) {
     var ret = '';
     if ( !(c%2)) { 
       ret += '<tr bgcolor="#d3d3d3"><td>'; 
     } else {
       ret += '<tr><td>'
+    }
+    if (p['status'] != "Mine") {
+      ret += "<img src=\"../img/check.png\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Mine')\">&nbsp;&nbsp;"
+    }
+    if (p['status'] != "Taken") {
+      ret += "<img src=\"../img/x.png\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Taken')\">&nbsp;&nbsp;"
+    }
+    if (p['status'] != "Available") {
+      ret += "<img src=\"../img/clear.jpg\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Available')\">&nbsp;&nbsp;"
     }
     ret += p.rank + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
@@ -134,8 +176,7 @@
 </head>
 <body>
   <input type="file" name="rankcsv" id="rankcsv">
-  <br><div id="fileStats"></div>
-  <hr><div id="output"></div><hr>
+  <br><div id="fileStats"></div><hr>
   <input type="text" name="srchbox" id="srchbox" size=50>
   <hr>
   <b>SEARCH RESULTS</b>
@@ -153,7 +194,8 @@
   <b>AVAILABLE</b>
   <table id="tAvailable" border="1">
     <thead></thead>
-    <tbody></tbody>
+    <tbody>
+    </tbody>
   </table>
   <hr>
   <b>TAKEN</b>
@@ -161,5 +203,6 @@
     <thead></thead>
     <tbody></tbody>
   </table>
+  <hr><div id="output"></div>
 </body>
 </html>
