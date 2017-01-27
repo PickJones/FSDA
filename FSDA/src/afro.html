@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!--script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script-->
+<!--script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script-->
+<script src="jquery-3.1.1.js"></script>
+<script src="jquery-csv.js"></script>
+<script>
+  var playerData = $.csv.toArrays('');
+  var playerDataQB = [];
+  var playerDataRB = [];
+  var playerDataWR = [];
+  var playerDataTE = [];
+  var playerDataK = [];
+  var playerDataDef = [];
+  $(function() {
+    $('#srchbox').keyup(function() { doSearch(document.getElementById('srchbox').value); });
+    $('#rankcsv').bind('change', prepareDA);
+  });
+  function tableRow(c, p) {
+    var ret = '';
+    if ( !(c%2)) { 
+      ret += '<tr bgcolor="#d3d3d3"><td>'; 
+    } else {
+      ret += '<tr><td>'
+    }
+    ret += p.rank + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+    return ret;
+  }
+  function prepareDA(f) {
+    $('#output').append('prepareDA()<br>');
+    
+    //dummy
+    //$.when(dummy2()).then(dummy3());
+    
+    //load file into array
+    fileToArray(f);
+
+    //inspect arry
+    //inspectArray();
+
+    //make position arrays
+    setTimeout(function(){
+      positionArray();
+    },1000);
+
+    //write available players
+    setTimeout(function(){
+      writeAvailable();
+    },2000);
+  }
+  function writeAvailable() {
+    $('#output').append('writeAvailable()<br>')
+    $('#output').append('playerDataQB=' + playerDataQB.length + '<br>')
+    var cnt = 0;
+    var a = new Array(playerDataQB, playerDataRB);
+    for (p in a) {
+      $('#output').append(p.length + '<br>');
+      $('#output').append(typeof(p) + '<br>');
+      cnt = 0;
+      for (i=0; i<p.length; i++) {
+        if (p[i].status == "Available") {
+          cnt++;
+          $('#avail' + p[i].position + ' tbody').append(tableRow(cnt,p[i]));
+        }
+      }
+    }
+//    cnt = 0;
+//    tr = '';
+//    for (i=0; i<playerDataRB.length; i++) {
+//      if (playerDataRB[i].status == "Available") {
+//        cnt++;
+//        $('#availRB tbody').append(tableRow(cnt,playerDataRB[i]));
+//      }
+//    }
+//    cnt = 0;
+//    tr = '';
+//    for (i=0; i<playerDataWR.length; i++) {
+//      if (playerDataWR[i].status == "Available") {
+//        cnt++;
+//        $('#availWR tbody').append(tableRow(cnt,playerDataWR[i]));
+//      }
+//    }
+//    cnt = 0;
+//    tr = '';
+//    for (i=0; i<playerDataTE.length; i++) {
+//      if (playerDataTE[i].status == "Available") {
+//        cnt++;
+//        $('#availTE tbody').append(tableRow(cnt,playerDataTE[i]));
+//      }
+//    }
+//    cnt = 0;
+//    tr = '';
+//    for (i=0; i<playerDataK.length; i++) {
+//      if (playerDataK[i].status == "Available") {
+//        cnt++;
+//        $('#availK tbody').append(tableRow(cnt,playerDataK[i]));
+//      }
+//    }
+//    cnt = 0;
+//    tr = '';
+//    for (i=0; i<playerDataDef.length; i++) {
+//      if (playerDataDef[i].status == "Available") {
+//        cnt++;
+//        $('#availDef tbody').append(tableRow(cnt,playerDataDef[i]));
+//      }
+//    }
+  }
+  function positionArray() {
+    $('#output').append('positionArray()<br>');
+    for (var row in playerData) {
+      if (playerData[row][2] == "QB") {
+        playerDataQB[playerDataQB.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      } else if (playerData[row][2] == "RB") {
+        playerDataRB[playerDataRB.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      } else if (playerData[row][2] == "WR") {
+        playerDataWR[playerDataWR.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      } else if (playerData[row][2] == "TE") {
+        playerDataTE[playerDataTE.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      } else if (playerData[row][2] == "K") {
+        playerDataK[playerDataK.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      } else if (playerData[row][2] == "Def") {
+        playerDataDef[playerDataDef.length] = { status:"Available", name:playerData[row][0], team:playerData[row][1], rank:parseInt(playerData[row][3]), position:playerData[row][2], posrk:playerData[row][2]+playerData[row][3] };
+      }
+    }
+    playerDataQB.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+    playerDataRB.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+    playerDataWR.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+    playerDataTE.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+    playerDataK.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+    playerDataDef.sort(function(a,b) {
+      return a.rank - b.rank;
+    });
+  }
+  function fileToArray(f) {
+    $('#output').append('fileToArray()<br>');
+    var files = f.target.files;
+    var file = files[0];
+    var reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = function(event) {
+      var csv = event.target.result;
+      playerData = $.csv.toArrays(csv);
+      $('#fileStats').append('Imported ' + (playerData.length-1) + ' player(s)');
+    };
+    reader.onerror = function() { alert('Unable to read ' + file.fileName); };
+    $('#output').append('END fileToArray()<br>');
+  }
+  function inspectArray() {
+    $('#output').append('inspectArray()<br>');
+    $('#output').append(playerData.length + '<br>');
+    $('#output').append('END inspectArray()<br>');
+  }
+  function doSearch(s) {
+    $('#resultsQB').empty();
+    $('#resultsRB').empty();
+    $('#resultsWR').empty();
+    $('#resultsTE').empty();
+    $('#resultsK').empty();
+    $('#resultsDef').empty();
+    if (event.keyCode == 13) {
+      srchterm="";
+      $('#srchbox').val(srchterm);
+    } else {
+      srchterm = s;
+    }
+
+    if (srchterm.length > 0) {
+
+
+
+      icons="<img src=\"../img/x.png\" height=\"15\" width=\"15\" onclick=\"clearSearchBox()\">&nbsp;&nbsp;";
+      icons+="<img src=\"../img/check.png\" height=\"15\" width=\"15\" onclick=\"clearSearchBox()\">&nbsp;&nbsp;";
+      icons+="<img src=\"../img/clear.jpg\" height=\"15\" width=\"15\" onclick=\"clearSearchBox()\">&nbsp;&nbsp;";
+    } else {
+      icons="";
+    }
+    $('#tmp').html(icons + srchterm);
+    if (srchterm.length > 0) {
+      for (var row in playerData) {
+        if (playerData[row][0].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
+          $('#searchResults' + playerData[row][2]).append(playerData[row][2] + playerData[row][3] + " " + playerData[row][0] + " " + playerData[row][1] + "<br>")
+        }
+      }
+    }
+  }
+  function clearSearchBox() {
+    $('#srchbox').val('');
+    doSearch('');
+    $('#srchbox').focus();
+  }
+  function resetConfirmation() {
+    $('#confirm').html("<br><button onclick=\"doReset()\">Confirm</button><button onclick=\"cancelReset()\">Cancel</button>");
+  }
+  function cancelReset() {
+    $('#confirm').empty();
+  }
+  function doReset() {
+    clearSearchBox();
+    playerData = $.csv.toArrays('');
+    playerDataQB = [];
+    playerDataRB = [];
+    playerDataWR = [];
+    playerDataTE = [];
+    playerDataK = [];
+    playerDataDef = [];
+    $('#rankcsv').empty();
+    $('#output').empty();
+    $('#outputcsv').empty();
+    $('#fileStats').empty();
+    $('#confirm').empty();
+  }
+</script>
+</head>
+<body>
+  <input type="file" name="rankcsv" id="rankcsv">
+  <br><div id="fileStats"></div>
+  <hr>
+  <table id="input" width="100%">
+    <tr>
+      <td>
+        <input type="text" name="srchbox" id="srchbox" size=50>
+      </td><td align="right">
+        <button onclick="resetConfirmation()">Reset</button>
+        <div id="confirm"></div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+  <b>SEARCH RESULTS</b>
+  <table id="resultsP" border="1"><tr>
+    <td align="center"><b>QB</b></td>
+    <td align="center"><b>RB</b></td>
+    <td align="center"><b>WR</b></td>
+    <td align="center"><b>TE</b></td>
+    <td align="center"><b>K</b></td>
+    <td align="center"><b>Def</b></td>
+  </tr><tr>
+    <td valign="top"><table id="resultsQB"><tbody></tbody></table></td>
+    <td valign="top"><table id="resultsRB"><tbody></tbody></table></td>
+    <td valign="top"><table id="resultsWR"><tbody></tbody></table></td>
+    <td valign="top"><table id="resultsTE"><tbody></tbody></table></td>
+    <td valign="top"><table id="resultsK"><tbody></tbody></table></td>
+    <td valign="top"><table id="resultsDef"><tbody></tbody></table></td>
+  </tr></table>
+  <hr>
+  <div id="topPicks"></div>
+  <hr>
+  <div id="myTeam"></div>
+  <hr>
+  <b>AVAILABLE</b>
+  <table id="availP" border="1"><tr>
+    <td align="center"><b>QB</b></td>
+    <td align="center"><b>RB</b></td>
+    <td align="center"><b>WR</b></td>
+    <td align="center"><b>TE</b></td>
+    <td align="center"><b>K</b></td>
+    <td align="center"><b>Def</b></td>
+  </tr><tr>
+    <td valign="top"><table id="availQB"><tbody></tbody></table></td>
+    <td valign="top"><table id="availRB"><tbody></tbody></table></td>
+    <td valign="top"><table id="availWR"><tbody></tbody></table></td>
+    <td valign="top"><table id="availTE"><tbody></tbody></table></td>
+    <td valign="top"><table id="availK"><tbody></tbody></table></td>
+    <td valign="top"><table id="availDef"><tbody></tbody></table></td>
+  </tr></table>
+  <hr>
+  <div id="takenP"></div>
+  <hr>
+  <table border="1"><tr><td valign="top">
+  <b>tmp</b><br>
+  <div id="tmp"></div>
+  </td><td valign="top">
+  <b>output</b><br>
+  <div id="output"></div>
+  </td><td valign="top">
+  <b>outputcsv</b><br>
+  <div id="outputcsv"></div>
+  </td></tr></table>
+</body>
+</html>
