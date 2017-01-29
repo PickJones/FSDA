@@ -60,6 +60,7 @@
          ,rank:parseInt(playerArray[row][3])
          ,position:playerArray[row][2]
          ,posrk:playerArray[row][2]+playerArray[row][3]
+         ,rkpos:("00"+playerArray[row][3]).slice(-3) + playerArray[row][2]
          ,posrkz:playerArray[row][2]+("00"+playerArray[row][3]).slice(-3)
         });
         if (!cntr[playerArray[row][2]]) {
@@ -68,6 +69,9 @@
       }
     }
     players.shift();
+    players.sort(function(a,b) {
+      return ((a.rkpos < b.rkpos) ? -1 : ((a.rkpos > b.rkpos) ? 1 : 0));
+    });
     $('#output').append('playerArray.length=' + playerArray.length + '<br>');
     $('#output').append('players.length=' + players.length + '<br>');
     for (var p in cntr) {
@@ -111,7 +115,7 @@
     $('#output').append('--displayPlayers()<br>');
     for (var row in players) {
       cntr[players[row].position][players[row].status]++;
-      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(cntr[players[row].position][players[row].status], players[row]))
+      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(cntr[players[row].position][players[row].status], players[row], 0))
     }
     $('#output').append('END displayPlayers()<br>');
   }
@@ -128,13 +132,24 @@
       for (var row in players) {
         if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
           cnt++;
-          $('#tSearchResults tbody').append(getTableRow(cnt, players[row]));
+          $('#tSearchResults tbody').append(getTableRow(cnt, players[row], 1));
         }
       }
     }
   }
   function changeStatus(pr, s) {
-    var os = updateStatus(pr, s);
+    for (var row in players) {
+      if (players[row]['posrk'] == pr) {
+        $('#output').append('updaing ' + players[row]['name'] + '<br>')
+        var os = players[row]['status'];
+        players[row]['status'] = s;
+        $('#tdLastAction5').html($('#tdLastAction4').html());
+        $('#tdLastAction4').html($('#tdLastAction3').html());
+        $('#tdLastAction3').html($('#tdLastAction2').html());
+        $('#tdLastAction2').html($('#tdLastAction1').html());
+        $('#tdLastAction1').html('<table>' + getTableRow(1, players[row], 1) + '</table>');
+      }
+    }
     setTimeout(function() {
       displayPlayers();
     },500);
@@ -144,32 +159,28 @@
   }
   function updateStatus(pr, s) {
     var ret = '';
-    for (var row in players) {
-      if (players[row]['posrk'] == pr) {
-        $('#output').append('updaing ' + players[row]['name'] + '<br>')
-        ret = players[row]['status'];
-        players[row]['status'] = s;
-        return ret;
-      }
-    }
   }
-  function getTableRow(c, p) {
+  function getTableRow(c, p, s) {
     var ret = '';
+    var icn = '';
+    icn += "<img src=\"../img/ICON\" ";
+    icn += "height=\"15\" width=\"15\" ";
+    icn += "onclick=\"changeStatus('" + p['posrk'] + "', 'STATUS')\">&nbsp;&nbsp;";
     if ( !(c%2)) { 
       ret += '<tr bgcolor="#d3d3d3"><td>'; 
     } else {
       ret += '<tr><td>'
     }
     if (p['status'] != "Mine") {
-      ret += "<img src=\"../img/check.png\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Mine')\">&nbsp;&nbsp;"
+      ret += icn.replace('ICON','check.png').replace('STATUS','Mine');
     }
     if (p['status'] != "Taken") {
-      ret += "<img src=\"../img/x.png\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Taken')\">&nbsp;&nbsp;"
+      ret += icn.replace('ICON','x.png').replace('STATUS','Taken');
     }
     if (p['status'] != "Available") {
-      ret += "<img src=\"../img/clear.jpg\" height=\"15\" width=\"15\" onclick=\"changeStatus('" + p['posrk'] + "', 'Available')\">&nbsp;&nbsp;"
+      ret += icn.replace('ICON','clear.jpg').replace('STATUS','Available');
     }
-    ret += p.rank + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+    ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
   }
 </script>
@@ -178,11 +189,20 @@
   <input type="file" name="rankcsv" id="rankcsv">
   <br><div id="fileStats"></div><hr>
   <input type="text" name="srchbox" id="srchbox" size=50>
+  <br><br>
+  <table id="tLastAction" border="1"><tr>
+    <td id="tdLastAction1"></td>
+    <td id="tdLastAction2"></td>
+    <td id="tdLastAction3"></td>
+    <td id="tdLastAction4"></td>
+    <td id="tdLastAction5"></td>
+  </tr></table>
   <hr>
   <b>SEARCH RESULTS</b>
   <table id="tSearchResults" border="1">
     <thead></thead>
-    <tbody></tbody>
+    <tbody><tr>
+    </tr></tbody>
   </table>
   <hr>
   <b>MY TEAM</b>
