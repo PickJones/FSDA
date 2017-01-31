@@ -6,7 +6,17 @@
 <script>
   var playerArray = [[]];
   var players = [{}];
-  var cntr = {};
+  var positions = {};
+  var nonDefaultPositionCnt = 0;
+  var defaultPositionRank = {
+    QB:1
+   ,RB:2
+   ,WR:3
+   ,TEx:4
+   ,K:5
+   ,IDP:6
+   ,Def:7
+  };
   $('#output').hide();
   $(function() {
     $('#srchbox').keyup(function() { doSearch($('#srchbox').val()); });
@@ -14,27 +24,37 @@
   });
   function prepareDA(f) {
     $('#output').append('prepareDA()<br>');
+    var tmout = 0;
     
     //load file into array
     fileToArray(f);
 
+    //get positions
+    tmout += 500;
+    setTimeout(function() {
+      getPositions();
+    },tmout);
+
     //array to object
+    tmout += 500;
     setTimeout(function() {
       arrayToObject();
-    },1000);
+    },tmout);
 
     //inspect arry
     //inspectArray();
 
     //prepare html tables
+    tmout += 500;
     setTimeout(function() {
       prepareTables();
-    },2000);
+    },tmout);
 
     //show all the players
+    tmout += 500;
     setTimeout(function() {
       displayPlayers();
-    },3000);
+    },tmout);
   }
   function fileToArray(f) {
     $('#output').append('fileToArray()<br>');
@@ -49,6 +69,40 @@
     reader.onerror = function() { alert('Unable to read ' + file.fileName); };
     $('#output').append('END fileToArray()<br>');
   }
+  function getPositions() {
+    $('#output').append('getPositions()<br>');
+    for (var pos in defaultPositionRank) {
+      for (var row in playerArray) {
+        if (pos == playerArray[row][2]) {
+          positions[playerArray[row][2]] = {
+            Available:0, 
+            Mine:0, 
+            Taken:0, 
+            Rank:defaultPositionRank[pos]
+          };
+          break;
+        }
+      }
+    }
+    for (var row in playerArray) {
+      if ($.isNumeric(playerArray[row][3]) 
+          && playerArray[row][3] !== "undefined"
+          && !positions[playerArray[row][2]]) {
+        if (!defaultPositionRank[playerArray[row][2]]) { nonDefaultPositionCnt++; }
+        positions[playerArray[row][2]] = {
+          Available:0, 
+          Mine:0, 
+          Taken:0, 
+          Rank:Object.keys(defaultPositionRank).length+nonDefaultPositionCnt
+        };
+      }
+    }
+    for (var p in positions) {
+      $('#output').append(p + '|');
+    }
+    $('#output').append('<br>');
+    $('#output').append('END getPositions()<br>');
+  }
   function arrayToObject() {
     $('#output').append('arrayToObject()<br>');
     for (var row in playerArray) {
@@ -60,62 +114,57 @@
          ,rank:parseInt(playerArray[row][3])
          ,position:playerArray[row][2]
          ,posrk:playerArray[row][2]+playerArray[row][3]
-         ,rkpos:("00"+playerArray[row][3]).slice(-3) + playerArray[row][2]
-         ,posrkz:playerArray[row][2]+("00"+playerArray[row][3]).slice(-3)
+         ,orderby:("00"+playerArray[row][3]).slice(-3) + ("0"+positions[playerArray[row][2]]['Rank']).slice(-2)
         });
-        if (!cntr[playerArray[row][2]]) {
-          cntr[playerArray[row][2]] = {Available:0, Mine:0, Taken:0};
-        }
       }
     }
     players.shift();
     players.sort(function(a,b) {
-      return ((a.rkpos < b.rkpos) ? -1 : ((a.rkpos > b.rkpos) ? 1 : 0));
+      return ((a.orderby < b.orderby) ? -1 : ((a.orderby > b.orderby) ? 1 : 0));
     });
     $('#output').append('playerArray.length=' + playerArray.length + '<br>');
     $('#output').append('players.length=' + players.length + '<br>');
-    for (var p in cntr) {
-      $('#output').append(p + '|');
-    }
-    $('#output').append('<br>');
     $('#fileStats').append('Imported ' + (players.length) + ' player(s)');
     $('#output').append('END arrayToObject()<br>');
   }
   function prepareTables() {
     $('#output').append('prepareTables()<br>');
     var th = '<tr>';
-    for (var p in cntr) {
-      th += '<td align="center"><b>' + p + '</b></td>';
+    var tb = '<tr>';
+    var cnt = 0;
+    for (var p in positions) {
+      th += '<th id="thSTATUS' + p + '" align="center" ';
+//      th += 'draggable="true" ';
+//      th += 'ondragstart="positionDrag(event)" ';
+//      th += 'ondragover="positionAllow(event)" ';
+//      th += 'ondrop="positionDrop(event)" ';
+      th += '><b>' + p + '</b></th>';
+      tb += '<td valign="top"><table id="tSTATUS' + p + '"><tbody></tbody></table></td>';
+      cnt++;
     }
     th += '</tr>'
-    $('#tMine thead').append(th);
-    $('#tAvailable thead').append(th);
-    $('#tTaken thead').append(th);
-    var tb = '<tr>';
-    for (var p in cntr) {
-      tb += '<td valign="top"><table id="tSTATUS' + p + '"><tbody></tbody></table></td>';
-    }
     tb += '</tr>'
-    //alert(tb.replace(/STATUS/g, 'Mine'));
-    $('#tMine tbody').append(tb.replace(/STATUS/g, 'Mine'));
-    $('#tAvailable tbody').append(tb.replace(/STATUS/g, 'Available'));
-    $('#tTaken tbody').append(tb.replace(/STATUS/g, 'Taken'));
+    $('#tMine thead').html(th.replace(/STATUS/g, 'Mine'));
+    $('#tMine tbody').html(tb.replace(/STATUS/g, 'Mine'));
+    $('#tAvailable thead').html(th.replace(/STATUS/g, 'Available'));
+    $('#tAvailable tbody').html(tb.replace(/STATUS/g, 'Available'));
+    $('#tTaken thead').html(th.replace(/STATUS/g, 'Taken'));
+    $('#tTaken tbody').html(tb.replace(/STATUS/g, 'Taken'));
     $('#output').append('END prepareTables()<br>');
   }
   function displayPlayers() {
     $('#output').append('displayPlayers(' + players.length + ')<br>');
-    for (var pos in cntr) {
+    for (var pos in positions) {
       $('#tAvailable' + pos + ' tbody').empty();
-      cntr[pos]['Available']=0;
+      positions[pos]['Available']=0;
       $('#tMine' + pos + ' tbody').empty();
-      cntr[pos]['Mine']=0;
+      positions[pos]['Mine']=0;
       $('#tTaken' + pos + ' tbody').empty();
-      cntr[pos]['Taken']=0;
+      positions[pos]['Taken']=0;
     }
-    $('#output').append('--displayPlayers()<br>');
     for (var row in players) {
-      cntr[players[row].position][players[row].status]++;
-      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(cntr[players[row].position][players[row].status], players[row], 0))
+      positions[players[row].position][players[row].status]++;
+      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(positions[players[row].position][players[row].status], players[row], 0))
     }
     $('#output').append('END displayPlayers()<br>');
   }
@@ -183,6 +232,61 @@
     ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
   }
+//  function positionDrag(ev) {
+//    ev.dataTransfer.setData("text", $(event.target).text());
+//  }
+//  function positionAllow(ev) {
+//    ev.preventDefault();
+//  }
+//  function positionDrop(ev) {
+//    ev.preventDefault();
+//    var dragPos = ev.dataTransfer.getData("text");
+//    var dropPos = $(event.target).text();
+//    $('#output').append('positionDrop(' + dragPos + ',' + dropPos + ')<br>');
+//    var dragrk = positions[dragPos]['Rank'];
+//    var droprk = positions[dropPos]['Rank'];
+//    var inc = 0;
+//    if (dragrk > droprk) {
+//      inc = 1;
+//    } else if (dragrk < droprk) {
+//      inc = -1;
+//    } else {
+//      return;
+//    }
+//    $('#output').append('start order:');
+//    for (var p in positions) {
+//      $('#output').append(p + positions[p]['Rank'] + '|');
+//      if (positions[p]['Rank'] >= Math.min(dragrk,droprk)
+//       && positions[p]['Rank'] <= Math.max(dragrk,droprk)) {
+//        positions[p]['Rank'] = positions[p]['Rank'] + inc;
+//      }
+//    }
+//    $('#output').append('<br>');
+//    positions[dragPos]['Rank'] = droprk;
+//    //var newPositions = {};
+//    //loop 1 thru max(positions)
+//      //loop positions to find the rank
+//        //push to newPositions
+//    //positions = newPositions;
+//    $('#output').append('end order:');
+//    for (var p in positions) {
+//      $('#output').append(p + positions[p]['Rank'] + '|');
+//    }
+//    $('#output').append('<br>');
+//    $('#tAvailable tr').each(function() {
+//      var tr = $(this);
+//      var td1 = tr.find('td:eq(' + dragrk + ')'); // indices are zero-based here
+//      var td2 = tr.find('td:eq(' + droprk + ')');
+//      td1.detach().insertAfter(td2);
+//    });
+//    //for (var row in players) {
+//    //  players[row]['orderby'] = ("0"+positions[players['position']]['Rank']).slice(-2) + ("00"+playerArray[row][3]).slice(-3) + playerArray[row][2]
+//    //}
+//    //players.sort(function(a,b) {
+//    //  return ((a.orderby < b.orderby) ? -1 : ((a.orderby > b.orderby) ? 1 : 0));
+//    //});
+//    $('#output').append('END positionDrop()<br>');
+//  }
 </script>
 </head>
 <body>
@@ -201,8 +305,7 @@
   <b>SEARCH RESULTS</b>
   <table id="tSearchResults" border="1">
     <thead></thead>
-    <tbody><tr>
-    </tr></tbody>
+    <tbody><tr></tr></tbody>
   </table>
   <hr>
   <b>MY TEAM</b>
@@ -214,8 +317,7 @@
   <b>AVAILABLE</b>
   <table id="tAvailable" border="1">
     <thead></thead>
-    <tbody>
-    </tbody>
+    <tbody></tbody>
   </table>
   <hr>
   <b>TAKEN</b>
