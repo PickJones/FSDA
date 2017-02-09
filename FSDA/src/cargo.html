@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="jquery-3.1.1.js"></script>
+<script src="jquery-csv.js"></script>
+<script>
+  var selectedView = "r";
+  var playerArray = [[]];
+  var players = [{}];
+  var positions = {};
+  var sources = {};
+  var nonDefaultPositionCnt = 0;
+  var defaultPositionRank = {
+    QB:1
+   ,RB:2
+   ,WR:3
+   ,TE:4
+   ,K:5
+   ,IDP:6
+   ,Def:7
+  };
+  $(function() {
+    window.onload = toggleView(selectedView);
+    $('#srchbox').keyup(function() { doSearch($('#srchbox').val()); });
+    $('#rankcsv').bind('change', prepareDA);
+    $('#aPlayerPosition').bind('click', function() { toggleView("p"); });
+    $('#aPlayerRank').bind('click', function() { toggleView("r"); });
+  });
+  function toggleView(w) {
+    $('#output').append('toggleView(' + selectedView + ')<br>');
+    selectedView = w;
+    if (w == "p") {
+      $('#dPlayerRank').hide();
+      $('#dPlayerPosition').show();
+    } else {
+      $('#dPlayerPosition').hide();
+      $('#dPlayerRank').show();
+    }
+    $('#output').append('END toggleView(' + selectedView + ')<br>');
+  } //toggleView
+  function prepareDA(f) {
+    $('#output').append('prepareDA()<br>');
+    $('#dFileIn').hide();
+    var tmout = 0;
+    
+    //load file into array
+    fileToArray(f);
+
+    //get positions
+    tmout += 500;
+    setTimeout(function() {
+      getPositions();
+    },tmout);
+    //get sources
+    setTimeout(function() {
+      getSources();
+    },tmout);
+
+    //array to object
+    tmout += 500;
+    setTimeout(function() {
+      arrayToObject();
+    },tmout);
+
+    //inspect arry
+    //inspectArray();
+
+    //prepare html tables
+    tmout += 500;
+    setTimeout(function() {
+      prepareTables();
+    },tmout);
+
+    //show all the players
+    tmout += 500;
+    setTimeout(function() {
+      displayPlayersPositions();
+    },tmout);
+  } //prepareDA
+  function fileToArray(f) {
+    $('#output').append('fileToArray()<br>');
+    var files = f.target.files;
+    var file = files[0];
+    var reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = function(event) {
+      var csv = event.target.result;
+      playerArray = $.csv.toArrays(csv);
+    };
+    reader.onerror = function() { alert('Unable to read ' + file.fileName); };
+    $('#output').append('END fileToArray()<br>');
+  } //fileToArray
+  function getPositions() {
+    $('#output').append('getPositions()<br>');
+    for (var pos in defaultPositionRank) {
+      for (var row in playerArray) {
+        if (pos == playerArray[row][2]) {
+          positions[playerArray[row][2]] = {
+            Available:0
+           ,Mine:0 
+           ,Taken:0 
+           ,Rank:defaultPositionRank[pos]
+           ,cnt:0
+          };
+          break;
+        }
+      }
+    }
+    for (var row in playerArray) {
+      if ($.isNumeric(playerArray[row][3]) 
+          && playerArray[row][3] !== "undefined"
+          && !positions[playerArray[row][2]]) {
+        if (!defaultPositionRank[playerArray[row][2]]) { nonDefaultPositionCnt++; }
+        positions[playerArray[row][2]] = {
+          Available:0, 
+          Mine:0, 
+          Taken:0, 
+          Rank:Object.keys(defaultPositionRank).length+nonDefaultPositionCnt
+        };
+      }
+    }
+    for (var p in positions) {
+      $('#output').append(p + '|');
+    }
+    $('#output').append('<br>');
+    $('#output').append('END getPositions()<br>');
+  } //getPositions
+  function getSources() {
+    $('#output').append('getSources()<br>');
+    var colcnt = 0;
+    sources['0'] = { name:'USER' };
+    for (var col in playerArray[0]) {
+      colcnt++;
+      if (colcnt >= 4) {
+        $('#output').append('playerArray[0][' + col + '] = ' + playerArray[0][col] + '<br>');
+        sources['' + colcnt] = {
+          weight:1
+         ,col:colcnt
+         ,name:playerArray[0][col]
+        };
+      }
+    }
+    //sources.shift();
+    $('#output').append('END getSources(' + sources.length + ')<br>');
+  } //getSources
+  function prepareTables() {
+    $('#output').append('prepareTables()<br>');
+    //player ranks
+    var rth = '<tr>';
+    rth += '<th align="center"><b>Name</b></th>';
+    rth += '<th align="center"><b>Team</b></th>';
+    rth += '<th align="center"><b>Position</b></th>';
+    rth += '<th align="center"><b>Avg</b></th>';
+    rth += '<th align="center"><b>Rank</b></th>';
+    var rcnt = 0;
+    for (var src in sources) {
+      $('#output').append('sources[' + src + '][name]=' + sources[src]['name'] + '<br>');
+      rth += '<th align="center">'
+      rth += '<b>' + sources[src]['name'] + '</b>';
+      rth += '<br><input type="number" value="' + sources[src]['weight'] + '" id="wt' + sources[src]['col'] + '" style="width: 3em">';
+      rth += '</th>';
+      rcnt++;
+    }
+    rth += '</tr>';
+    $('#tRanks thead').html(rth);
+    //player positions
+    var th = '<tr>';
+    var tb = '<tr>';
+    var cnt = 0;
+    for (var p in positions) {
+      th += '<th id="thSTATUS' + p + '" align="center" ';
+//      th += 'draggable="true" ';
+//      th += 'ondragstart="positionDrag(event)" ';
+//      th += 'ondragover="positionAllow(event)" ';
+//      th += 'ondrop="positionDrop(event)" ';
+      th += '><b>' + p + '</b></th>';
+      tb += '<td valign="top"><table id="tSTATUS' + p + '"><tbody></tbody></table></td>';
+      cnt++;
+    }
+    th += '</tr>'
+    tb += '</tr>'
+    $('#tMine thead').html(th.replace(/STATUS/g, 'Mine'));
+    $('#tMine tbody').html(tb.replace(/STATUS/g, 'Mine'));
+    $('#tAvailable thead').html(th.replace(/STATUS/g, 'Available'));
+    $('#tAvailable tbody').html(tb.replace(/STATUS/g, 'Available'));
+    $('#tTaken thead').html(th.replace(/STATUS/g, 'Taken'));
+    $('#tTaken tbody').html(tb.replace(/STATUS/g, 'Taken'));
+    $('#output').append('END prepareTables()<br>');
+  } //prepareTables
+  function arrayToObject() {
+    $('#output').append('arrayToObject()<br>');
+    for (var row in playerArray) {
+      if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
+        players.push({
+          status:"Available"
+         ,name:playerArray[row][0]
+         ,team:playerArray[row][1]
+         ,position:playerArray[row][2]
+        });
+        for (var src in sources) {
+          if ($.isNumeric(playerArray[row][sources[src]['col']])) {
+            players[players.length-1]['src' + src] = playerArray[row][sources[src]['col']];
+          }
+        }
+      }
+    }
+    players.shift();
+    $('#output').append('playerArray.length=' + playerArray.length + '<br>');
+    $('#output').append('players.length=' + players.length + '<br>');
+    $('#fileStats').append('Imported ' + players.length + ' player(s)');
+    $('#output').append('END arrayToObject()<br>');
+  } //arrayToObject
+  function calcSortRank() {
+    $('#output').append('calcSortRank()<br>');
+    for (var p in players) {
+      calcAvg(players[p]);
+    }
+    players.sort(function(a,b) {
+      return ((a.calcavg < b.calcavg) ? -1 : ((a.calcavg > b.calcavg) ? 1 : 0));
+    });
+    for (var p in players) {
+      positions[players[p]['position']]['cnt'] = positions[players[p]['position']]['cnt']+1;
+      players[p]['rank'] = positions[players[p]['position']]['cnt'];
+      players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
+      players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
+    }
+    $('#output').append('END calcSortRank()<br>');
+  } //calcSortRank
+  function calcAvg(p) {
+    $('#output').append('calcAvg()<br>');
+    var srccnt = 0;
+    var srcwt = 0;
+    var srcval = 0;
+    for (var src in sources) {
+      if ($.isNumeric(p['src' + src])) {
+        srccnt++;
+        srcwt += sources[src]['weight'];
+        srcval += p['src' + src]*sources[src]['weight'];
+      }
+    }
+    p['calcavg'] = srcval/srcwt;
+    $('#output').append('players[' + p['name'] + '][calcavg]= ' + p['calcavg'] + '<br>');
+    $('#output').append('END calcAvg()<br>');
+  } //calcAvg
+  function displayPlayersPositions() {
+    $('#output').append('displayPlayersPositions(' + players.length + ')<br>');
+    for (var pos in positions) {
+      $('#tAvailable' + pos + ' tbody').empty();
+      positions[pos]['Available']=0;
+      $('#tMine' + pos + ' tbody').empty();
+      positions[pos]['Mine']=0;
+      $('#tTaken' + pos + ' tbody').empty();
+      positions[pos]['Taken']=0;
+    }
+    for (var row in players) {
+      positions[players[row].position][players[row].status]++;
+      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(positions[players[row].position][players[row].status], players[row], 0))
+    }
+    $('#output').append('END displayPlayersPositions()<br>');
+  } //displayPlayersPositions
+  function doSearch(s) {
+    $('#tSearchResults tbody').empty();
+    if (event.keyCode == 13) {
+      srchterm="";
+      $('#srchbox').val(srchterm);
+    } else {
+      srchterm = s;
+    }
+    if (srchterm.length > 0) {
+      var cnt = 0;
+      for (var row in players) {
+        if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
+          cnt++;
+          $('#tSearchResults tbody').append(getTableRow(cnt, players[row], 1));
+        }
+      }
+    }
+  } //doSearch
+  function changeStatus(pr, s) {
+    for (var row in players) {
+      if (players[row]['posrk'] == pr) {
+        $('#output').append('updaing ' + players[row]['name'] + '<br>')
+        var os = players[row]['status'];
+        players[row]['status'] = s;
+        $('#tdLastAction5').html($('#tdLastAction4').html());
+        $('#tdLastAction4').html($('#tdLastAction3').html());
+        $('#tdLastAction3').html($('#tdLastAction2').html());
+        $('#tdLastAction2').html($('#tdLastAction1').html());
+        $('#tdLastAction1').html('<table>' + getTableRow(1, players[row], 1) + '</table>');
+      }
+    }
+    setTimeout(function() {
+      displayPlayersPositions();
+    },500);
+    $('#srchbox').val('');
+    doSearch('');
+    $('#srchbox').focus();
+  } //changeStatus
+  function getTableRow(c, p, s) {
+    var ret = '';
+    var icn = '';
+    icn += "<img src=\"../img/ICON\" ";
+    icn += "height=\"15\" width=\"15\" ";
+    icn += "onclick=\"changeStatus('" + p['posrk'] + "', 'STATUS')\">&nbsp;&nbsp;";
+    if ( !(c%2)) { 
+      ret += '<tr bgcolor="#d3d3d3"><td>'; 
+    } else {
+      ret += '<tr><td>'
+    }
+    if (p['status'] != "Mine") {
+      ret += icn.replace('ICON','check.png').replace('STATUS','Mine');
+    }
+    if (p['status'] != "Taken") {
+      ret += icn.replace('ICON','x.png').replace('STATUS','Taken');
+    }
+    if (p['status'] != "Available") {
+      ret += icn.replace('ICON','clear.jpg').replace('STATUS','Available');
+    }
+    ret += p.calcavg + '|' + p.rank + '|' + p.posrk + '|' + p.orderby + '|' + ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+    return ret;
+  } //getTableRow
+</script>
+</head>
+<body>
+<div id="dView">
+  <div id="dFileIn"><input type="file" name="rankcsv" id="rankcsv"></div>
+  <br>
+  <div id="fileStats"></div>
+  <br>
+  <a id="aPlayerPosition" href="#">Player Positions</a>
+  &nbsp;|&nbsp;
+  <a id="aPlayerRank" href="#">Player Ranks</a>
+  <hr>
+</div>
+<div id="dPlayerPosition">
+  <input type="text" name="srchbox" id="srchbox" size=50>
+  <br><br>
+  <table id="tLastAction" border="1"><tr>
+    <td id="tdLastAction1"></td>
+    <td id="tdLastAction2"></td>
+    <td id="tdLastAction3"></td>
+    <td id="tdLastAction4"></td>
+    <td id="tdLastAction5"></td>
+  </tr></table>
+  <hr>
+  <b>SEARCH RESULTS</b>
+  <table id="tSearchResults" border="1">
+    <thead></thead>
+    <tbody><tr></tr></tbody>
+  </table>
+  <hr>
+  <b>MY TEAM</b>
+  <table id="tMine" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>TOP PICKS</b>
+  <table id="tTopPicks" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>AVAILABLE</b>
+  <table id="tAvailable" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>TAKEN</b>
+  <table id="tTaken" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+</div>
+<div id="dPlayerRank">
+  <b>RANKS</b>
+  <table id="tRanks" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+</div>
+<hr><div id="output"></div>
+</body>
+</html>
