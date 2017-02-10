@@ -76,6 +76,9 @@
     setTimeout(function() {
       displayPlayersPositions();
     },tmout);
+    //setTimeout(function() {
+    //  displayPlayersRanks();
+    //},tmout);
   } //prepareDA
   function fileToArray(f) {
     $('#output').append('fileToArray()<br>');
@@ -131,7 +134,6 @@
     sources['0'] = { name:'USER' };
     for (var col in playerArray[0]) {
       if (colcnt >= 3) {
-        $('#output').append('playerArray[0][' + col + '] = ' + playerArray[0][col] + '<br>');
         sources['' + colcnt] = {
           weight:1
          ,col:colcnt
@@ -155,7 +157,7 @@
         });
         for (var src in sources) {
           if ($.isNumeric(playerArray[row][sources[src]['col']])) {
-            players[players.length-1]['src' + src] = playerArray[row][sources[src]['col']];
+            players[players.length-1]['src'+src] = playerArray[row][sources[src]['col']];
           }
         }
         calcAvg(players[players.length-1]);
@@ -174,10 +176,10 @@
     var srcwt = 0;
     var srcval = 0;
     for (var src in sources) {
-      if ($.isNumeric(p['src' + src])) {
+      if ($.isNumeric(p['src'+src])) {
         srccnt++;
         srcwt += sources[src]['weight'];
-        srcval += p['src' + src]*sources[src]['weight'];
+        srcval += p['src'+src]*sources[src]['weight'];
       }
     }
     p['calcavg'] = srcval/srcwt;
@@ -212,7 +214,6 @@
     rth += '<th align="center"><b>Rank</b></th>';
     var rcnt = 0;
     for (var src in sources) {
-      $('#output').append('sources[' + src + '][name]=' + sources[src]['name'] + '<br>');
       rth += '<th align="center">'
       rth += '<b>' + sources[src]['name'] + '</b>';
       rth += '<br><input type="number" value="' + sources[src]['weight'] + '" id="wt' + sources[src]['col'] + '" style="width: 3em">';
@@ -255,11 +256,17 @@
       $('#tTaken' + pos + ' tbody').empty();
       positions[pos]['Taken']=0;
     }
+    $('#tRanks tbody').empty();
     for (var row in players) {
       positions[players[row].position][players[row].status]++;
-      $('#t' + players[row].status + players[row].position + ' tbody').append(getTableRow(positions[players[row].position][players[row].status], players[row], 0))
+      $('#t' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
+      $('#tRanks tbody').append(getRanksRow(players[row]));
     }
     $('#output').append('END displayPlayersPositions()<br>');
+  } //displayPlayersPositions
+  function displayPlayersRanks() {
+    $('#output').append('displayPlayersRanks(' + players.length + ')<br>');
+    $('#output').append('END displayPlayersRanks()<br>');
   } //displayPlayersPositions
   function doSearch(s) {
     $('#tSearchResults tbody').empty();
@@ -274,7 +281,7 @@
       for (var row in players) {
         if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
           cnt++;
-          $('#tSearchResults tbody').append(getTableRow(cnt, players[row], 1));
+          $('#tSearchResults tbody').append(getPositionRow(cnt, players[row], 1));
         }
       }
     }
@@ -289,7 +296,7 @@
         $('#tdLastAction4').html($('#tdLastAction3').html());
         $('#tdLastAction3').html($('#tdLastAction2').html());
         $('#tdLastAction2').html($('#tdLastAction1').html());
-        $('#tdLastAction1').html('<table>' + getTableRow(1, players[row], 1) + '</table>');
+        $('#tdLastAction1').html('<table>' + getPositionRow(1, players[row], 1) + '</table>');
       }
     }
     setTimeout(function() {
@@ -299,7 +306,7 @@
     doSearch('');
     $('#srchbox').focus();
   } //changeStatus
-  function getTableRow(c, p, s) {
+  function getPositionRow(c, p, s) {
     var ret = '';
     var icn = '';
     icn += "<img src=\"../img/ICON\" ";
@@ -321,7 +328,28 @@
     }
     ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
-  } //getTableRow
+  } //getPositionRow
+  function getRanksRow(p) {
+    var ret = '';
+    ret += '<tr>';
+    ret += '<td>' + p['name'] + '</td>';
+    ret += '<td>' + p['team'] + '</td>';
+    ret += '<td>' + p['position'] + '</td>';
+    ret += '<td align="center">' + Math.round(100*p['calcavg'])/100 + '</td>';
+    ret += '<td align="center">' + p['rank'] + '</td>';
+    ret += '<td><input type="number" value="' + p['src0'] + '" id="x" style="width: 3em"></td>';
+    for (var src in sources) {
+      if (src != '0') {
+        if (p['src'+src]) {
+          ret += '<td align="center">' + p['src'+src] + '</td>';
+        } else {
+          ret += '<td></td>';
+        }
+      }
+    }
+    ret += '</tr>'
+    return ret;
+  } //getRanksRow
 </script>
 </head>
 <body>
