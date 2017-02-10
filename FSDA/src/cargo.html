@@ -130,8 +130,7 @@
     var colcnt = 0;
     sources['0'] = { name:'USER' };
     for (var col in playerArray[0]) {
-      colcnt++;
-      if (colcnt >= 4) {
+      if (colcnt >= 3) {
         $('#output').append('playerArray[0][' + col + '] = ' + playerArray[0][col] + '<br>');
         sources['' + colcnt] = {
           weight:1
@@ -139,10 +138,69 @@
          ,name:playerArray[0][col]
         };
       }
+      colcnt++;
     }
     //sources.shift();
     $('#output').append('END getSources(' + sources.length + ')<br>');
   } //getSources
+  function arrayToObject() {
+    $('#output').append('arrayToObject()<br>');
+    for (var row in playerArray) {
+      if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
+        players.push({
+          status:"Available"
+         ,name:playerArray[row][0]
+         ,team:playerArray[row][1]
+         ,position:playerArray[row][2]
+        });
+        for (var src in sources) {
+          if ($.isNumeric(playerArray[row][sources[src]['col']])) {
+            players[players.length-1]['src' + src] = playerArray[row][sources[src]['col']];
+          }
+        }
+        calcAvg(players[players.length-1]);
+      }
+    }
+    players.shift();
+    sortArray(players, 'calcavg');
+    rankPlayers();
+    $('#output').append('playerArray.length=' + playerArray.length + '<br>');
+    $('#output').append('players.length=' + players.length + '<br>');
+    $('#fileStats').append('Imported ' + players.length + ' player(s)');
+    $('#output').append('END arrayToObject()<br>');
+  } //arrayToObject
+  function calcAvg(p) {
+    var srccnt = 0;
+    var srcwt = 0;
+    var srcval = 0;
+    for (var src in sources) {
+      if ($.isNumeric(p['src' + src])) {
+        srccnt++;
+        srcwt += sources[src]['weight'];
+        srcval += p['src' + src]*sources[src]['weight'];
+      }
+    }
+    p['calcavg'] = srcval/srcwt;
+  } //calcAvg
+  function sortArray(sa, o) {
+    $('#output').append('sortArray()<br>');
+    sa.sort(function(a,b) {
+      return ((a[o] < b[o]) ? -1 : ((a[o] > b[o]) ? 1 : 0));
+    });
+    $('#output').append('END sortArray()<br>');
+  }
+  function rankPlayers() {
+    $('#output').append('rankPlayers()<br>');
+    var curcnt = 0;
+    for (var p in players) {
+      curcnt = positions[players[p]['position']]['cnt']+1;
+      positions[players[p]['position']]['cnt'] = curcnt;
+      players[p]['rank'] = curcnt;
+      players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
+      players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
+    }
+    $('#output').append('END rankPlayers()<br>');
+  } //rankPlayers
   function prepareTables() {
     $('#output').append('prepareTables()<br>');
     //player ranks
@@ -187,61 +245,6 @@
     $('#tTaken tbody').html(tb.replace(/STATUS/g, 'Taken'));
     $('#output').append('END prepareTables()<br>');
   } //prepareTables
-  function arrayToObject() {
-    $('#output').append('arrayToObject()<br>');
-    for (var row in playerArray) {
-      if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
-        players.push({
-          status:"Available"
-         ,name:playerArray[row][0]
-         ,team:playerArray[row][1]
-         ,position:playerArray[row][2]
-        });
-        for (var src in sources) {
-          if ($.isNumeric(playerArray[row][sources[src]['col']])) {
-            players[players.length-1]['src' + src] = playerArray[row][sources[src]['col']];
-          }
-        }
-      }
-    }
-    players.shift();
-    $('#output').append('playerArray.length=' + playerArray.length + '<br>');
-    $('#output').append('players.length=' + players.length + '<br>');
-    $('#fileStats').append('Imported ' + players.length + ' player(s)');
-    $('#output').append('END arrayToObject()<br>');
-  } //arrayToObject
-  function calcSortRank() {
-    $('#output').append('calcSortRank()<br>');
-    for (var p in players) {
-      calcAvg(players[p]);
-    }
-    players.sort(function(a,b) {
-      return ((a.calcavg < b.calcavg) ? -1 : ((a.calcavg > b.calcavg) ? 1 : 0));
-    });
-    for (var p in players) {
-      positions[players[p]['position']]['cnt'] = positions[players[p]['position']]['cnt']+1;
-      players[p]['rank'] = positions[players[p]['position']]['cnt'];
-      players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
-      players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
-    }
-    $('#output').append('END calcSortRank()<br>');
-  } //calcSortRank
-  function calcAvg(p) {
-    $('#output').append('calcAvg()<br>');
-    var srccnt = 0;
-    var srcwt = 0;
-    var srcval = 0;
-    for (var src in sources) {
-      if ($.isNumeric(p['src' + src])) {
-        srccnt++;
-        srcwt += sources[src]['weight'];
-        srcval += p['src' + src]*sources[src]['weight'];
-      }
-    }
-    p['calcavg'] = srcval/srcwt;
-    $('#output').append('players[' + p['name'] + '][calcavg]= ' + p['calcavg'] + '<br>');
-    $('#output').append('END calcAvg()<br>');
-  } //calcAvg
   function displayPlayersPositions() {
     $('#output').append('displayPlayersPositions(' + players.length + ')<br>');
     for (var pos in positions) {
@@ -316,7 +319,7 @@
     if (p['status'] != "Available") {
       ret += icn.replace('ICON','clear.jpg').replace('STATUS','Available');
     }
-    ret += p.calcavg + '|' + p.rank + '|' + p.posrk + '|' + p.orderby + '|' + ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+    ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
   } //getTableRow
 </script>
