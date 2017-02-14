@@ -4,6 +4,9 @@
 <script src="jquery-3.1.1.js"></script>
 <script src="jquery-csv.js"></script>
 <script>
+  //var expdate = "01 Mar " + now().getFullYear()+1 + " 00:00:00 UTC";
+  var expdate = "01 Mar 2018 00:00:00 UTC";
+  var expdate_past = "01 Jan 1970 00:00:00 UTC";
   var selectedView = "r";
   var playerArray = [[]];
   var players = [{}];
@@ -324,6 +327,7 @@
     sortArray(players, 'calcavg');
     rankPlayers();
     displayPlayers($('#sFilterRanks').val());
+    setCookie('src'+s, newwt, ((newwt<=0) ? expdate_past : expdate));
   } //changeWeight
   function changeUserRank(pr) {
     var newrk = $('#rk' + pr).val();
@@ -392,6 +396,24 @@
     var fltr = $('#sFilterRanks').val();
     displayPlayers(fltr);
   } //filterRanks
+  function setCookie(cname, cvalue, cexp) {
+    document.cookie = cname + "=" + cvalue + ";" + cexp + ";path=/";
+    $('#output').append("COOKIE SET: " + cname + "=" + cvalue + ";" + cexp + ";path=/<br>");
+  } //setCookie
+  function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  } //getCookie
 </script>
 </head>
 <body>
