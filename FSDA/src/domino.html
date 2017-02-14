@@ -99,9 +99,9 @@
       for (var row in playerArray) {
         if (pos == playerArray[row][2]) {
           positions[playerArray[row][2]] = {
-            Available:0
-           ,Mine:0 
-           ,Taken:0 
+            A:0
+           ,M:0 
+           ,T:0 
            ,Rank:defaultPositionRank[pos]
            ,cnt:0
           };
@@ -115,9 +115,9 @@
           && !positions[playerArray[row][2]]) {
         if (!defaultPositionRank[playerArray[row][2]]) { nonDefaultPositionCnt++; }
         positions[playerArray[row][2]] = {
-          Available:0, 
-          Mine:0, 
-          Taken:0, 
+          A:0, 
+          M:0, 
+          T:0, 
           Rank:Object.keys(defaultPositionRank).length+nonDefaultPositionCnt
         };
       }
@@ -132,13 +132,14 @@
     $('#output').append('getSources()<br>');
     var colcnt = 0;
     sources['0'] = { 
-      name:'USER'
+      weight:getCookie('src0')
      ,col:0 
+     ,name:'USER'
     };
     for (var col in playerArray[0]) {
       if (colcnt >= 3) {
         sources['' + colcnt] = {
-          weight:1
+          weight:getCookie('src'+colcnt) || 1
          ,col:colcnt
          ,name:playerArray[0][col]
         };
@@ -153,7 +154,7 @@
     for (var row in playerArray) {
       if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
         players.push({
-          status:"Available"
+          status:getCookie('dummy') || "A"
          ,name:playerArray[row][0]
          ,team:playerArray[row][1]
          ,position:playerArray[row][2]
@@ -239,41 +240,41 @@
     var tb = '<tr>';
     var cnt = 0;
     for (var p in positions) {
-      th += '<th id="thSTATUS' + p + '" align="center" ';
+      th += '<th id="thStatusSTATUS' + p + '" align="center" ';
 //      th += 'draggable="true" ';
 //      th += 'ondragstart="positionDrag(event)" ';
 //      th += 'ondragover="positionAllow(event)" ';
 //      th += 'ondrop="positionDrop(event)" ';
       th += '><b>' + p + '</b></th>';
-      tb += '<td valign="top"><table id="tSTATUS' + p + '"><tbody></tbody></table></td>';
+      tb += '<td valign="top"><table id="tStatusSTATUS' + p + '"><tbody></tbody></table></td>';
       cnt++;
     }
     th += '</tr>'
     tb += '</tr>'
-    $('#tMine thead').html(th.replace(/STATUS/g, 'Mine'));
-    $('#tMine tbody').html(tb.replace(/STATUS/g, 'Mine'));
-    $('#tAvailable thead').html(th.replace(/STATUS/g, 'Available'));
-    $('#tAvailable tbody').html(tb.replace(/STATUS/g, 'Available'));
-    $('#tTaken thead').html(th.replace(/STATUS/g, 'Taken'));
-    $('#tTaken tbody').html(tb.replace(/STATUS/g, 'Taken'));
+    $('#tStatusM thead').html(th.replace(/STATUS/g, 'M'));
+    $('#tStatusM tbody').html(tb.replace(/STATUS/g, 'M'));
+    $('#tStatusA thead').html(th.replace(/STATUS/g, 'A'));
+    $('#tStatusA tbody').html(tb.replace(/STATUS/g, 'A'));
+    $('#tStatusT thead').html(th.replace(/STATUS/g, 'T'));
+    $('#tStatusT tbody').html(tb.replace(/STATUS/g, 'T'));
     $('#output').append('END prepareTables()<br>');
   } //prepareTables
   function displayPlayers(spos) {
     $('#output').append('displayPlayers(' + players.length + ')<br>');
     for (var pos in positions) {
-      $('#tAvailable' + pos + ' tbody').empty();
-      positions[pos]['Available']=0;
-      $('#tMine' + pos + ' tbody').empty();
-      positions[pos]['Mine']=0;
-      $('#tTaken' + pos + ' tbody').empty();
-      positions[pos]['Taken']=0;
+      $('#tStatusA' + pos + ' tbody').empty();
+      positions[pos]['A']=0;
+      $('#tStatusM' + pos + ' tbody').empty();
+      positions[pos]['M']=0;
+      $('#tStatusT' + pos + ' tbody').empty();
+      positions[pos]['T']=0;
     }
     $('#tRanks tbody').empty();
     var rcnt = 1;
     var rrow = '';
     for (var row in players) {
       positions[players[row].position][players[row].status]++;
-      $('#t' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
+      $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
       rrow = getRanksRow(players[row],spos,rcnt);
       $('#tRanks tbody').append(rrow);
       if (rrow != '') { rcnt++; }
@@ -353,14 +354,14 @@
     } else {
       ret += '<tr><td>';
     }
-    if (p['status'] != "Mine") {
-      ret += icn.replace('ICON','check.png').replace('STATUS','Mine');
+    if (p['status'] != "M") {
+      ret += icn.replace('ICON','check.png').replace('STATUS','M');
     }
-    if (p['status'] != "Taken") {
-      ret += icn.replace('ICON','x.png').replace('STATUS','Taken');
+    if (p['status'] != "T") {
+      ret += icn.replace('ICON','x.png').replace('STATUS','T');
     }
-    if (p['status'] != "Available") {
-      ret += icn.replace('ICON','clear.jpg').replace('STATUS','Available');
+    if (p['status'] != "A") {
+      ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
     }
     ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
     return ret;
@@ -397,22 +398,13 @@
     displayPlayers(fltr);
   } //filterRanks
   function setCookie(cname, cvalue, cexp) {
-    document.cookie = cname + "=" + cvalue + ";" + cexp + ";path=/";
-    $('#output').append("COOKIE SET: " + cname + "=" + cvalue + ";" + cexp + ";path=/<br>");
+    //document.cookie = cname + "=" + cvalue + ";" + cexp + ";path=/";
+    localStorage.setItem(cname, cvalue);
+    $('#output').append("localStorage.setItem(" + cname + "," + cvalue + ")<br>");
   } //setCookie
   function getCookie(cname) {
-    var name = cname + "=";
-    var ca = document.cookie.split(';');
-    for(var i = 0; i < ca.length; i++) {
-      var c = ca[i];
-      while (c.charAt(0) == ' ') {
-        c = c.substring(1);
-      }
-      if (c.indexOf(name) == 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return "";
+    $('#output').append('getCookie(' + cname + ')<br>');
+    return localStorage.getItem(cname);
   } //getCookie
 </script>
 </head>
@@ -444,26 +436,26 @@
     <tbody><tr></tr></tbody>
   </table>
   <hr>
-  <b>MY TEAM</b>
-  <table id="tMine" border="1">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
-  <hr>
   <b>TOP PICKS</b>
   <table id="tTopPicks" border="1">
     <thead></thead>
     <tbody></tbody>
   </table>
   <hr>
+  <b>MY TEAM</b>
+  <table id="tStatusM" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
   <b>AVAILABLE</b>
-  <table id="tAvailable" border="1">
+  <table id="tStatusA" border="1">
     <thead></thead>
     <tbody></tbody>
   </table>
   <hr>
   <b>TAKEN</b>
-  <table id="tTaken" border="1">
+  <table id="tStatusT" border="1">
     <thead></thead>
     <tbody></tbody>
   </table>
