@@ -164,7 +164,6 @@
             if (src == '0') {
               players[players.length-1]['src'+src] = getCookie('Rank'+players[players.length-1]['name']+players[players.length-1]['position']+players[players.length-1]['team']);
             } else {
-              $('#output').append('src!=0('+src+')<br>');
               players[players.length-1]['src'+src] = playerArray[row][sources[src]['col']];
             }
           //}
@@ -407,10 +406,8 @@
   function setCookie(cname, cvalue, cexp) {
     //document.cookie = cname + "=" + cvalue + ";" + cexp + ";path=/";
     localStorage.setItem(cname, cvalue);
-    $('#output').append("localStorage.setItem(" + cname + "," + cvalue + ")<br>");
   } //setCookie
   function getCookie(cname) {
-    $('#output').append('getCookie(' + cname + ')<br>');
     return localStorage.getItem(cname);
   } //getCookie
 </script>
