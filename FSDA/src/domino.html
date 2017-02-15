@@ -154,15 +154,20 @@
     for (var row in playerArray) {
       if ($.isNumeric(playerArray[row][3]) && playerArray[row][3] !== "undefined") {
         players.push({
-          status:getCookie('dummy') || "A"
+          status:getCookie('Status'+playerArray[row][0]+playerArray[row][2]+playerArray[row][1]) || "A"
          ,name:playerArray[row][0]
          ,team:playerArray[row][1]
          ,position:playerArray[row][2]
         });
         for (var src in sources) {
-          if ($.isNumeric(playerArray[row][sources[src]['col']])) {
-            players[players.length-1]['src'+src] = playerArray[row][sources[src]['col']];
-          }
+          //if ($.isNumeric(playerArray[row][sources[src]['col']])) {
+            if (src == '0') {
+              players[players.length-1]['src'+src] = getCookie('Rank'+players[players.length-1]['name']+players[players.length-1]['position']+players[players.length-1]['team']);
+            } else {
+              $('#output').append('src!=0('+src+')<br>');
+              players[players.length-1]['src'+src] = playerArray[row][sources[src]['col']];
+            }
+          //}
         }
         calcAvg(players[players.length-1]);
       }
@@ -305,6 +310,7 @@
         $('#output').append('updaing ' + players[row]['name'] + '<br>');
         var os = players[row]['status'];
         players[row]['status'] = s;
+        setCookie('Status'+players[row]['name']+players[row]['position']+players[row]['team'], s, expdate);
         $('#tdLastAction5').html($('#tdLastAction4').html());
         $('#tdLastAction4').html($('#tdLastAction3').html());
         $('#tdLastAction3').html($('#tdLastAction2').html());
@@ -337,6 +343,7 @@
         $('#output').append('updaing ' + players[row]['name'] + '[src0]=' + newrk + '<br>');
         players[row]['src0'] = newrk;
         calcAvg(players[row]);
+        setCookie('Rank'+players[row]['name']+players[row]['position']+players[row]['team'], newrk, ((newrk<=0) ? expdate_past : expdate));
       }
     }
     sortArray(players, 'calcavg');
