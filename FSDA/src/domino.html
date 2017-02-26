@@ -4,10 +4,7 @@
 <script src="jquery-3.1.1.js"></script>
 <script src="jquery-csv.js"></script>
 <script>
-  //var expdate = "01 Mar " + now().getFullYear()+1 + " 00:00:00 UTC";
-  var expdate = "01 Mar 2018 00:00:00 UTC";
-  var expdate_past = "01 Jan 1970 00:00:00 UTC";
-  var selectedView = "r";
+  var selectedView = getCookie("selectedView") || "r";
   var playerArray = [[]];
   var players = [{}];
   var positions = {};
@@ -32,6 +29,7 @@
   function toggleView(w) {
     $('#output').append('toggleView(' + selectedView + ')<br>');
     selectedView = w;
+    setCookie("selectedView", selectedView);
     if (w == "p") {
       $('#dPlayerRank').hide();
       $('#dPlayerPosition').show();
@@ -143,6 +141,7 @@
          ,col:colcnt
          ,name:playerArray[0][col]
         };
+        setCookie('src'+colcnt+'name', playerArray[0][col])
       }
       colcnt++;
     }
@@ -158,11 +157,13 @@
          ,name:playerArray[row][0]
          ,team:playerArray[row][1]
          ,position:playerArray[row][2]
+         ,positionrank:positions[playerArray[row][2]]['Rank']
+         ,unq:(playerArray[row][0]+playerArray[row][2]+playerArray[row][1]).replace(/ /g,'').replace(/\./g,'').replace(/,/g,'')
         });
         for (var src in sources) {
           //if ($.isNumeric(playerArray[row][sources[src]['col']])) {
             if (src == '0') {
-              players[players.length-1]['src'+src] = getCookie('Rank'+players[players.length-1]['name']+players[players.length-1]['position']+players[players.length-1]['team']);
+              players[players.length-1]['src'+src] = getCookie('Rank'+players[players.length-1]['unq']);
             } else {
               players[players.length-1]['src'+src] = playerArray[row][sources[src]['col']];
             }
@@ -174,6 +175,7 @@
     players.shift();
     sortArray(players, 'calcavg');
     rankPlayers();
+    sortArray(players, 'orderby');
     $('#output').append('playerArray.length=' + playerArray.length + '<br>');
     $('#output').append('players.length=' + players.length + '<br>');
     $('#fileStats').append('Imported ' + players.length + ' player(s)');
@@ -303,13 +305,13 @@
       }
     }
   } //doSearch
-  function changeStatus(pr, s) {
+  function changeStatus(u, s) {
     for (var row in players) {
-      if (players[row]['posrk'] == pr) {
+      if (players[row]['unq'] == u) {
         $('#output').append('updaing ' + players[row]['name'] + '<br>');
         var os = players[row]['status'];
         players[row]['status'] = s;
-        setCookie('Status'+players[row]['name']+players[row]['position']+players[row]['team'], s, expdate);
+        setCookie('Status'+players[row]['unq'], s);
         $('#tdLastAction5').html($('#tdLastAction4').html());
         $('#tdLastAction4').html($('#tdLastAction3').html());
         $('#tdLastAction3').html($('#tdLastAction2').html());
@@ -332,21 +334,23 @@
     }
     sortArray(players, 'calcavg');
     rankPlayers();
+    sortArray(players, 'orderby');
     displayPlayers($('#sFilterRanks').val());
-    setCookie('src'+s, newwt, ((newwt<=0) ? expdate_past : expdate));
+    setCookie('src'+s, newwt);
   } //changeWeight
-  function changeUserRank(pr) {
-    var newrk = $('#rk' + pr).val();
+  function changeUserRank(u) {
+    var newrk = $('#rk' + u).val();
     for (var row in players) {
-      if (players[row]['posrk'] == pr) {
-        $('#output').append('updaing ' + players[row]['name'] + '[src0]=' + newrk + '<br>');
+      if (players[row]['unq'] == u) {
+        $('#output').append('updating ' + players[row]['unq'] + '[src0]=' + newrk + '<br>');
         players[row]['src0'] = newrk;
         calcAvg(players[row]);
-        setCookie('Rank'+players[row]['name']+players[row]['position']+players[row]['team'], newrk, ((newrk<=0) ? expdate_past : expdate));
+        setCookie('Rank'+players[row]['unq'], newrk);
       }
     }
     sortArray(players, 'calcavg');
     rankPlayers();
+    sortArray(players, 'orderby');
     displayPlayers($('#sFilterRanks').val());
   } //changeUserRank
   function getPositionRow(c, p, s) {
@@ -354,7 +358,7 @@
     var icn = '';
     icn += "<img src=\"../img/ICON\" ";
     icn += "height=\"15\" width=\"15\" ";
-    icn += "onclick=\"changeStatus('" + p['posrk'] + "', 'STATUS')\">&nbsp;&nbsp;";
+    icn += "onclick=\"changeStatus('" + p['unq'] + "', 'STATUS')\">&nbsp;&nbsp;";
     if ( !(c%2)) { 
       ret += '<tr bgcolor="#d3d3d3"><td>'; 
     } else {
@@ -385,7 +389,7 @@
       ret += '<td>' + p['position'] + '</td>';
       ret += '<td align="center">' + Math.round(100*p['calcavg'])/100 + '</td>';
       ret += '<td align="center">' + p['rank'] + '</td>';
-      ret += "<td><input type=\"number\" value=\"" + p['src0'] + "\" id=\"rk" + p['posrk'] + "\" style=\"width: 3em\" onchange=\"changeUserRank('" + p['posrk'] + "')\"></td>";
+      ret += "<td><input type=\"number\" value=\"" + p['src0'] + "\" id=\"rk" + p['unq'] + "\" style=\"width: 3em\" onchange=\"changeUserRank('" + p['unq'] + "')\"></td>";
       for (var src in sources) {
         if (src != '0') {
           if (p['src'+src]) {
@@ -403,8 +407,7 @@
     var fltr = $('#sFilterRanks').val();
     displayPlayers(fltr);
   } //filterRanks
-  function setCookie(cname, cvalue, cexp) {
-    //document.cookie = cname + "=" + cvalue + ";" + cexp + ";path=/";
+  function setCookie(cname, cvalue) {
     localStorage.setItem(cname, cvalue);
   } //setCookie
   function getCookie(cname) {
