@@ -1,3 +1,8 @@
+
+////////////////////////////////////////////////////////////////////////////////////
+// Vars
+////////////////////////////////////////////////////////////////////////////////////
+
 var selectedView = getCookie("selectedView") || "r";
 var playerArray = [[]];
 var players = [{}];
@@ -22,6 +27,139 @@ $(function() {
   $('#aPlayerRank').bind('click', function() { toggleView("r"); });
 });
 
+////////////////////////////////////////////////////////////////////////////////////
+// Display
+////////////////////////////////////////////////////////////////////////////////////
+
+function prepareTables() {
+  $('#output').append('prepareTables()<br>');
+  //player ranks
+  var rth = '<tr>';
+  rth += '<th valign="top" align="center"><b>Name</b></th>';
+  rth += '<th valign="top" align="center"><b>Team</b></th>';
+  rth += '<th align="center"><b>Position</b>';
+  rth += "<br><select id=\"sFilterRanks\" onchange=\"filterRanks()\">";
+  rth += '<option value="All">All</option>';
+  for (var pos in positions) {
+    rth += '<option value="' + pos + '">' + pos + '</option>';
+  }
+  rth += '</select></th>';
+  rth += '<th valign="top" align="center"><b>Avg</b></th>';
+  rth += '<th valign="top" align="center"><b>Rank</b></th>';
+  var rcnt = 0;
+  for (var src in sources) {
+    rth += '<th align="center">'
+    rth += '<b>' + sources[src]['name'] + '</b>';
+    rth += "<br><input type=\"number\" value=\"" + sources[src]['weight'] + "\" id=\"wt" + sources[src]['col'] + "\" style=\"width: 3em\" onchange=\"changeWeight('" + sources[src]['col'] + "')\">";
+    rth += '</th>';
+    rcnt++;
+  }
+  rth += '</tr>';
+  $('#tRanks thead').html(rth);
+  //player positions
+  var th = '<tr>';
+  var tb = '<tr>';
+  var cnt = 0;
+  for (var p in positions) {
+    th += '<th id="thStatusSTATUS' + p + '" align="center" ';
+//      th += 'draggable="true" ';
+//      th += 'ondragstart="positionDrag(event)" ';
+//      th += 'ondragover="positionAllow(event)" ';
+//      th += 'ondrop="positionDrop(event)" ';
+    th += '><b>' + p + '</b></th>';
+    tb += '<td valign="top"><table id="tStatusSTATUS' + p + '"><tbody></tbody></table></td>';
+    cnt++;
+  }
+  th += '</tr>'
+  tb += '</tr>'
+  $('#tStatusM thead').html(th.replace(/STATUS/g, 'M'));
+  $('#tStatusM tbody').html(tb.replace(/STATUS/g, 'M'));
+  $('#tStatusA thead').html(th.replace(/STATUS/g, 'A'));
+  $('#tStatusA tbody').html(tb.replace(/STATUS/g, 'A'));
+  $('#tStatusT thead').html(th.replace(/STATUS/g, 'T'));
+  $('#tStatusT tbody').html(tb.replace(/STATUS/g, 'T'));
+  $('#output').append('END prepareTables()<br>');
+} //prepareTables
+
+function displayPlayers(spos) {
+  $('#output').append('displayPlayers(' + players.length + ')<br>');
+  for (var pos in positions) {
+    $('#tStatusA' + pos + ' tbody').empty();
+    positions[pos]['A']=0;
+    $('#tStatusM' + pos + ' tbody').empty();
+    positions[pos]['M']=0;
+    $('#tStatusT' + pos + ' tbody').empty();
+    positions[pos]['T']=0;
+  }
+  $('#tRanks tbody').empty();
+  var rcnt = 1;
+  var rrow = '';
+  for (var row in players) {
+    positions[players[row].position][players[row].status]++;
+    $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
+    rrow = getRanksRow(players[row],spos,rcnt);
+    $('#tRanks tbody').append(rrow);
+    if (rrow != '') { rcnt++; }
+  }
+  $('#output').append('END displayPlayers()<br>');
+} //displayPlayers
+
+function getPositionRow(c, p, s) {
+  var ret = '';
+  var icn = '';
+  icn += "<img src=\"../img/ICON\" ";
+  icn += "height=\"15\" width=\"15\" ";
+  icn += "onclick=\"changeStatus('" + p['unq'] + "', 'STATUS')\">&nbsp;&nbsp;";
+  if ( !(c%2)) { 
+    ret += '<tr bgcolor="#d3d3d3"><td>'; 
+  } else {
+    ret += '<tr><td>';
+  }
+  if (p['status'] != "M") {
+    ret += icn.replace('ICON','check.png').replace('STATUS','M');
+  }
+  if (p['status'] != "T") {
+    ret += icn.replace('ICON','x.png').replace('STATUS','T');
+  }
+  if (p['status'] != "A") {
+    ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
+  }
+  ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+  return ret;
+} //getPositionRow
+
+function getRanksRow(p, pos, c) {
+  var ret = '';
+  if (pos == "All" || pos == p['position']) {
+    if ( !(c%2)) { 
+      ret += '<tr bgcolor="#d3d3d3">'; 
+    } else {
+      ret += '<tr>';
+    }
+    ret += '<td>' + p['name'] + '</td>';
+    ret += '<td>' + p['team'] + '</td>';
+    ret += '<td>' + p['position'] + '</td>';
+    ret += '<td align="center">' + Math.round(100*p['calcavg'])/100 + '</td>';
+    ret += '<td align="center">' + p['rank'] + '</td>';
+    ret += "<td><input type=\"number\" value=\"" + p['src0'] + "\" id=\"rk" + p['unq'] + "\" style=\"width: 3em\" onchange=\"changeUserRank('" + p['unq'] + "')\"></td>";
+    for (var src in sources) {
+      if (src != '0') {
+        if (p['src'+src]) {
+          ret += '<td align="center">' + p['src'+src] + '</td>';
+        } else {
+          ret += '<td></td>';
+        }
+      }
+    }
+    ret += '</tr>'
+  }
+  return ret;
+} //getRanksRow
+
+////////////////////////////////////////////////////////////////////////////////////
+// Interact
+////////////////////////////////////////////////////////////////////////////////////
+
 function toggleView(w) {
   $('#output').append('toggleView(' + selectedView + ')<br>');
   selectedView = w;
@@ -35,6 +173,85 @@ function toggleView(w) {
   }
   $('#output').append('END toggleView(' + selectedView + ')<br>');
 } //toggleView
+
+function doSearch(s) {
+  $('#tSearchResults tbody').empty();
+  if (event.keyCode == 13) {
+    srchterm="";
+    $('#srchbox').val(srchterm);
+  } else {
+    srchterm = s;
+  }
+  if (srchterm.length > 0) {
+    var cnt = 0;
+    for (var row in players) {
+      if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
+        cnt++;
+        $('#tSearchResults tbody').append(getPositionRow(cnt, players[row], 1));
+      }
+    }
+  }
+} //doSearch
+
+function changeStatus(u, s) {
+  for (var row in players) {
+    if (players[row]['unq'] == u) {
+      $('#output').append('updaing ' + players[row]['name'] + '<br>');
+      var os = players[row]['status'];
+      players[row]['status'] = s;
+      setCookie('Status'+players[row]['unq'], s);
+      $('#tdLastAction5').html($('#tdLastAction4').html());
+      $('#tdLastAction4').html($('#tdLastAction3').html());
+      $('#tdLastAction3').html($('#tdLastAction2').html());
+      $('#tdLastAction2').html($('#tdLastAction1').html());
+      $('#tdLastAction1').html('<table>' + getPositionRow(1, players[row], 1) + '</table>');
+    }
+  }
+  setTimeout(function() {
+    displayPlayers($('#sFilterRanks').val());
+  },500);
+  $('#srchbox').val('');
+  doSearch('');
+  $('#srchbox').focus();
+} //changeStatus
+
+function changeWeight(s) {
+  var newwt = $('#wt' + s).val();
+  sources[s]['weight'] = newwt;
+  for (var p in players) {
+    calcAvg(players[p]);
+  }
+  sortArray(players, 'calcavg');
+  rankPlayers();
+  sortArray(players, 'orderby');
+  displayPlayers($('#sFilterRanks').val());
+  setCookie('src'+s, newwt);
+} //changeWeight
+
+function changeUserRank(u) {
+  var newrk = $('#rk' + u).val();
+  for (var row in players) {
+    if (players[row]['unq'] == u) {
+      $('#output').append('updating ' + players[row]['unq'] + '[src0]=' + newrk + '<br>');
+      players[row]['src0'] = newrk;
+      calcAvg(players[row]);
+      setCookie('Rank'+players[row]['unq'], newrk);
+    }
+  }
+  sortArray(players, 'calcavg');
+  rankPlayers();
+  sortArray(players, 'orderby');
+  displayPlayers($('#sFilterRanks').val());
+} //changeUserRank
+
+function filterRanks() {
+  var fltr = $('#sFilterRanks').val();
+  displayPlayers(fltr);
+} //filterRanks
+
+////////////////////////////////////////////////////////////////////////////////////
+// Load / Process file
+////////////////////////////////////////////////////////////////////////////////////
 
 function prepareDA(f) {
   $('#output').append('prepareDA()<br>');
@@ -220,205 +437,9 @@ function rankPlayers() {
   $('#output').append('END rankPlayers()<br>');
 } //rankPlayers
 
-function prepareTables() {
-  $('#output').append('prepareTables()<br>');
-  //player ranks
-  var rth = '<tr>';
-  rth += '<th valign="top" align="center"><b>Name</b></th>';
-  rth += '<th valign="top" align="center"><b>Team</b></th>';
-  rth += '<th align="center"><b>Position</b>';
-  rth += "<br><select id=\"sFilterRanks\" onchange=\"filterRanks()\">";
-  rth += '<option value="All">All</option>';
-  for (var pos in positions) {
-    rth += '<option value="' + pos + '">' + pos + '</option>';
-  }
-  rth += '</select></th>';
-  rth += '<th valign="top" align="center"><b>Avg</b></th>';
-  rth += '<th valign="top" align="center"><b>Rank</b></th>';
-  var rcnt = 0;
-  for (var src in sources) {
-    rth += '<th align="center">'
-    rth += '<b>' + sources[src]['name'] + '</b>';
-    rth += "<br><input type=\"number\" value=\"" + sources[src]['weight'] + "\" id=\"wt" + sources[src]['col'] + "\" style=\"width: 3em\" onchange=\"changeWeight('" + sources[src]['col'] + "')\">";
-    rth += '</th>';
-    rcnt++;
-  }
-  rth += '</tr>';
-  $('#tRanks thead').html(rth);
-  //player positions
-  var th = '<tr>';
-  var tb = '<tr>';
-  var cnt = 0;
-  for (var p in positions) {
-    th += '<th id="thStatusSTATUS' + p + '" align="center" ';
-//      th += 'draggable="true" ';
-//      th += 'ondragstart="positionDrag(event)" ';
-//      th += 'ondragover="positionAllow(event)" ';
-//      th += 'ondrop="positionDrop(event)" ';
-    th += '><b>' + p + '</b></th>';
-    tb += '<td valign="top"><table id="tStatusSTATUS' + p + '"><tbody></tbody></table></td>';
-    cnt++;
-  }
-  th += '</tr>'
-  tb += '</tr>'
-  $('#tStatusM thead').html(th.replace(/STATUS/g, 'M'));
-  $('#tStatusM tbody').html(tb.replace(/STATUS/g, 'M'));
-  $('#tStatusA thead').html(th.replace(/STATUS/g, 'A'));
-  $('#tStatusA tbody').html(tb.replace(/STATUS/g, 'A'));
-  $('#tStatusT thead').html(th.replace(/STATUS/g, 'T'));
-  $('#tStatusT tbody').html(tb.replace(/STATUS/g, 'T'));
-  $('#output').append('END prepareTables()<br>');
-} //prepareTables
-
-function displayPlayers(spos) {
-  $('#output').append('displayPlayers(' + players.length + ')<br>');
-  for (var pos in positions) {
-    $('#tStatusA' + pos + ' tbody').empty();
-    positions[pos]['A']=0;
-    $('#tStatusM' + pos + ' tbody').empty();
-    positions[pos]['M']=0;
-    $('#tStatusT' + pos + ' tbody').empty();
-    positions[pos]['T']=0;
-  }
-  $('#tRanks tbody').empty();
-  var rcnt = 1;
-  var rrow = '';
-  for (var row in players) {
-    positions[players[row].position][players[row].status]++;
-    $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
-    rrow = getRanksRow(players[row],spos,rcnt);
-    $('#tRanks tbody').append(rrow);
-    if (rrow != '') { rcnt++; }
-  }
-  $('#output').append('END displayPlayers()<br>');
-} //displayPlayers
-
-function doSearch(s) {
-  $('#tSearchResults tbody').empty();
-  if (event.keyCode == 13) {
-    srchterm="";
-    $('#srchbox').val(srchterm);
-  } else {
-    srchterm = s;
-  }
-  if (srchterm.length > 0) {
-    var cnt = 0;
-    for (var row in players) {
-      if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
-        cnt++;
-        $('#tSearchResults tbody').append(getPositionRow(cnt, players[row], 1));
-      }
-    }
-  }
-} //doSearch
-
-function changeStatus(u, s) {
-  for (var row in players) {
-    if (players[row]['unq'] == u) {
-      $('#output').append('updaing ' + players[row]['name'] + '<br>');
-      var os = players[row]['status'];
-      players[row]['status'] = s;
-      setCookie('Status'+players[row]['unq'], s);
-      $('#tdLastAction5').html($('#tdLastAction4').html());
-      $('#tdLastAction4').html($('#tdLastAction3').html());
-      $('#tdLastAction3').html($('#tdLastAction2').html());
-      $('#tdLastAction2').html($('#tdLastAction1').html());
-      $('#tdLastAction1').html('<table>' + getPositionRow(1, players[row], 1) + '</table>');
-    }
-  }
-  setTimeout(function() {
-    displayPlayers($('#sFilterRanks').val());
-  },500);
-  $('#srchbox').val('');
-  doSearch('');
-  $('#srchbox').focus();
-} //changeStatus
-
-function changeWeight(s) {
-  var newwt = $('#wt' + s).val();
-  sources[s]['weight'] = newwt;
-  for (var p in players) {
-    calcAvg(players[p]);
-  }
-  sortArray(players, 'calcavg');
-  rankPlayers();
-  sortArray(players, 'orderby');
-  displayPlayers($('#sFilterRanks').val());
-  setCookie('src'+s, newwt);
-} //changeWeight
-
-function changeUserRank(u) {
-  var newrk = $('#rk' + u).val();
-  for (var row in players) {
-    if (players[row]['unq'] == u) {
-      $('#output').append('updating ' + players[row]['unq'] + '[src0]=' + newrk + '<br>');
-      players[row]['src0'] = newrk;
-      calcAvg(players[row]);
-      setCookie('Rank'+players[row]['unq'], newrk);
-    }
-  }
-  sortArray(players, 'calcavg');
-  rankPlayers();
-  sortArray(players, 'orderby');
-  displayPlayers($('#sFilterRanks').val());
-} //changeUserRank
-
-function getPositionRow(c, p, s) {
-  var ret = '';
-  var icn = '';
-  icn += "<img src=\"../img/ICON\" ";
-  icn += "height=\"15\" width=\"15\" ";
-  icn += "onclick=\"changeStatus('" + p['unq'] + "', 'STATUS')\">&nbsp;&nbsp;";
-  if ( !(c%2)) { 
-    ret += '<tr bgcolor="#d3d3d3"><td>'; 
-  } else {
-    ret += '<tr><td>';
-  }
-  if (p['status'] != "M") {
-    ret += icn.replace('ICON','check.png').replace('STATUS','M');
-  }
-  if (p['status'] != "T") {
-    ret += icn.replace('ICON','x.png').replace('STATUS','T');
-  }
-  if (p['status'] != "A") {
-    ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
-  }
-  ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
-  return ret;
-} //getPositionRow
-
-function getRanksRow(p, pos, c) {
-  var ret = '';
-  if (pos == "All" || pos == p['position']) {
-    if ( !(c%2)) { 
-      ret += '<tr bgcolor="#d3d3d3">'; 
-    } else {
-      ret += '<tr>';
-    }
-    ret += '<td>' + p['name'] + '</td>';
-    ret += '<td>' + p['team'] + '</td>';
-    ret += '<td>' + p['position'] + '</td>';
-    ret += '<td align="center">' + Math.round(100*p['calcavg'])/100 + '</td>';
-    ret += '<td align="center">' + p['rank'] + '</td>';
-    ret += "<td><input type=\"number\" value=\"" + p['src0'] + "\" id=\"rk" + p['unq'] + "\" style=\"width: 3em\" onchange=\"changeUserRank('" + p['unq'] + "')\"></td>";
-    for (var src in sources) {
-      if (src != '0') {
-        if (p['src'+src]) {
-          ret += '<td align="center">' + p['src'+src] + '</td>';
-        } else {
-          ret += '<td></td>';
-        }
-      }
-    }
-    ret += '</tr>'
-  }
-  return ret;
-} //getRanksRow
-
-function filterRanks() {
-  var fltr = $('#sFilterRanks').val();
-  displayPlayers(fltr);
-} //filterRanks
+////////////////////////////////////////////////////////////////////////////////////
+// Cookies
+////////////////////////////////////////////////////////////////////////////////////
 
 function setCookie(cname, cvalue) {
   localStorage.setItem(cname, cvalue);
