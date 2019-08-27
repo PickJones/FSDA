@@ -306,6 +306,7 @@ function fileToArray(f) {
   reader.onerror = function() { alert('Unable to read ' + file.fileName); };
   $('#output').append('END fileToArray()<br>');
 } //fileToArray
+
 function getPositions() {
   $('#output').append('getPositions()<br>');
   for (var pos in defaultPositionRank) {
@@ -386,28 +387,44 @@ function arrayToObject() {
           }
         //}
       }
-      calcAvg(players[players.length-1]);
     }
   }
   players.shift();
+  producePositionRank();
+  for (var row in playerArray) {
+    calcAvg(players[players.length-1]);
+  }
   sortArray(players, 'calcavg');
-  rankPlayers();
-  sortArray(players, 'orderby');
+  //rankPlayers();
+  //sortArray(players, 'orderby');
   $('#output').append('playerArray.length=' + playerArray.length + '<br>');
   $('#output').append('players.length=' + players.length + '<br>');
   $('#fileStats').append('Imported ' + players.length + ' player(s)');
   $('#output').append('END arrayToObject()<br>');
 } //arrayToObject
 
+function producePositionRank() {
+  for (var src in sources) {
+    sortArray(players,'src'+src)
+    for (var pos in positions) {
+      positions[pos]['cnt'] = 0;
+    }
+    for (var p in players) {
+      positions[players[p]['position']]['cnt'] = positions[players[p]['position']]['cnt']+1;
+      players[p]['srcposrk'+src] = positions[players[p]['position']]['cnt']
+    }    
+  }
+} //producePositionRank
+
 function calcAvg(p) {
   var srccnt = 0;
   var srcwt = 0;
   var srcval = 0;
   for (var src in sources) {
-    if ($.isNumeric(p['src'+src]) && $.isNumeric(sources[src]['weight'])) {
+    if ($.isNumeric(p['srcposrk'+src]) && $.isNumeric(sources[src]['weight'])) {
       srccnt++;
       srcwt += Math.round(1000*sources[src]['weight'])/1000;
-      srcval += p['src'+src]*sources[src]['weight'];
+      srcval += p['srcposrk'+src]*sources[src]['weight'];
     }
   }
   p['calcavg'] = srcval/srcwt;
@@ -421,21 +438,21 @@ function sortArray(sa, o) {
   $('#output').append('END sortArray()<br>');
 } //sortArray
 
-function rankPlayers() {
-  $('#output').append('rankPlayers()<br>');
-  var curcnt = 0;
-  for (var pos in positions) {
-    positions[pos]['cnt'] = 0;
-  }
-  for (var p in players) {
-    curcnt = positions[players[p]['position']]['cnt']+1;
-    positions[players[p]['position']]['cnt'] = curcnt;
-    players[p]['rank'] = curcnt;
-    players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
-    players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
-  }
-  $('#output').append('END rankPlayers()<br>');
-} //rankPlayers
+//function rankPlayers() {
+//  $('#output').append('rankPlayers()<br>');
+//  var curcnt = 0;
+//  for (var pos in positions) {
+//    positions[pos]['cnt'] = 0;
+//  }
+//  for (var p in players) {
+//    curcnt = positions[players[p]['position']]['cnt']+1;
+//    positions[players[p]['position']]['cnt'] = curcnt;
+//    players[p]['rank'] = curcnt;
+//    players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
+//    players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
+//  }
+//  $('#output').append('END rankPlayers()<br>');
+//} //rankPlayers
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Cookies

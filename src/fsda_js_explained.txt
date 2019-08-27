@@ -1,0 +1,39 @@
+fileToArray
+  transforms file to playerArray[]
+    0:name
+    1:team
+    2:position
+    3+:rank
+
+getPositions
+  generates the positions[]
+    A:# available
+    M:# mine
+    T:# taken
+    Rank:this positions order on the screen
+    cnt:?
+
+getSources
+  generates the sources[]
+    weight:the user-entered weight
+    col:the # of the column that is this rank (3+ from playerArray[])
+    name:the assigned name
+
+arrayToObject
+  creates players[] (object)
+    status:A | M | T
+    team:from input
+    name:from input
+    position:from input
+    positionrank:positions[Rank], this positions order on the screen
+    unq:name||pos||team
+    source:array of scores
+
+calcAvg
+  uses weight and rank to get an avg
+  (not using posrank)
+
+sortArray
+  sorts by some property
+
+rankPlayers
