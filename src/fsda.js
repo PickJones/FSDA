@@ -23,8 +23,8 @@ $(function() {
   window.onload = toggleView(selectedView);
   $('#srchbox').keyup(function() { doSearch($('#srchbox').val()); });
   $('#rankcsv').bind('change', prepareDA);
-  $('#aPlayerPosition').bind('click', function() { toggleView("p"); });
-  $('#aPlayerRank').bind('click', function() { toggleView("r"); });
+  $('#aDraftTool').bind('click', function() { toggleView("p"); });
+  $('#aSourceWeights').bind('click', function() { toggleView("r"); });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,9 @@ $(function() {
 
 function prepareTables() {
   $('#output').append('prepareTables()<br>');
-  //player ranks
+  
+  /////////////////////////////////////
+  //source weights
   var rth = '<tr>';
   rth += '<th valign="top" align="center"><b>Name</b></th>';
   rth += '<th valign="top" align="center"><b>Team</b></th>';
@@ -56,7 +58,9 @@ function prepareTables() {
   }
   rth += '</tr>';
   $('#tRanks thead').html(rth);
-  //player positions
+
+  /////////////////////////////////////
+  //draft tool
   var th = '<tr>';
   var tb = '<tr>';
   var cnt = 0;
@@ -96,15 +100,15 @@ function displayPlayers(spos) {
   var rrow = '';
   for (var row in players) {
     positions[players[row].position][players[row].status]++;
-    $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getPositionRow(positions[players[row].position][players[row].status], players[row], 0));
-    rrow = getRanksRow(players[row],spos,rcnt);
+    $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getDraftToolRow(positions[players[row].position][players[row].status], players[row], 0));
+    rrow = getSourceWeightRow(players[row],spos,rcnt);
     $('#tRanks tbody').append(rrow);
     if (rrow != '') { rcnt++; }
   }
   $('#output').append('END displayPlayers()<br>');
 } //displayPlayers
 
-function getPositionRow(c, p, s) {
+function getDraftToolRow(c, p, s) {
   var ret = '';
   var icn = '';
   icn += "<img src=\"../img/ICON\" ";
@@ -126,9 +130,9 @@ function getPositionRow(c, p, s) {
   }
   ret += ((s == 1) ? p.calcavg : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
   return ret;
-} //getPositionRow
+} //getDraftToolRow
 
-function getRanksRow(p, pos, c) {
+function getSourceWeightRow(p, pos, c) {
   var ret = '';
   if (pos == "All" || pos == p['position']) {
     if ( !(c%2)) { 
@@ -145,7 +149,7 @@ function getRanksRow(p, pos, c) {
     for (var src in sources) {
       if (src != '0') {
         if (p['src'+src]) {
-          ret += '<td align="center">' + p['src'+src] + '::' + p['srcposrk'+src] + '</td>';
+          ret += '<td align="center">' + p['srcposrk'+src] + '</td>';
         } else {
           ret += '<td></td>';
         }
@@ -154,7 +158,7 @@ function getRanksRow(p, pos, c) {
     ret += '</tr>'
   }
   return ret;
-} //getRanksRow
+} //getSourceWeightRow
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Interact
@@ -187,7 +191,7 @@ function doSearch(s) {
     for (var row in players) {
       if (players[row]['name'].toUpperCase().indexOf(srchterm.toUpperCase()) >= 0) {
         cnt++;
-        $('#tSearchResults tbody').append(getPositionRow(cnt, players[row], 1));
+        $('#tSearchResults tbody').append(getDraftToolRow(cnt, players[row], 1));
       }
     }
   }
@@ -204,7 +208,7 @@ function changeStatus(u, s) {
       $('#tdLastAction4').html($('#tdLastAction3').html());
       $('#tdLastAction3').html($('#tdLastAction2').html());
       $('#tdLastAction2').html($('#tdLastAction1').html());
-      $('#tdLastAction1').html('<table>' + getPositionRow(1, players[row], 1) + '</table>');
+      $('#tdLastAction1').html('<table>' + getDraftToolRow(1, players[row], 1) + '</table>');
     }
   }
   setTimeout(function() {
@@ -427,13 +431,13 @@ function calcAvg(p) {
     for (var src in sources) {
       if ($.isNumeric(p['src'+src]) && $.isNumeric(sources[src]['weight'])) {
         srcwt += Math.round(1000*sources[src]['weight'])/1000;
-        srcval += p['srcposrk'+src]*sources[src]['weight'];
+        srcval += (sources[src]['name']=='USER' ? p['src'+src] : p['srcposrk'+src])*sources[src]['weight'];
         //if (p['name'] == 'Andrew Luck') {
         //  $('#output').append('calcAvg::'+sources[src]['name']+'::'+sources[src]['weight']+'::'+p['srcposrk'+src]+'<br>');
         //}
       }
     }
-    p['calcavg'] = srcval/srcwt;
+    p['calcavg'] = (srcval/srcwt) || 99999;
     //$('#output').append('calcAvg::'+p['name']+'::'+p['calcavg']+'<br>');
   }
 } //calcAvg
@@ -448,37 +452,8 @@ function sortArray(sa, o) {
   //$('#output').append('sortArray('+sources[o.replace('src','')]['name']+','+o+')<br>');
   $('#output').append('sortArray('+o+')<br>');
   sa.sort(function(a,b) {
-    nullpad = pad('0',99)
-    if (isNaN(a)) {
-      apad = pad('9',99,'9')
-    } else {
-      apad = pad(Math.round(a[o]*1000),99,'0')
-    }
-    if (isNaN(b)) {
-      bpad = pad('9',99,'9')
-    } else {
-      bpad = pad(Math.round(b[o]*1000),99,'0')
-    }
-    //return ((pad(Math.round(a[o]*1000),99) < pad(Math.round(b[o]*1000),99)) ? -1 : ((pad(Math.round(a[o]*1000),99) > pad(Math.round(b[o]*1000),99)) ? 1 : 0));
-    if (apad == bpad) {
-      return 0;
-    } else if (apad == nullpad) {
-      return -1;
-    } else if (apad < bpad) {
-      return -1;
-    } else if (apad > bpad) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return ((pad(Math.round(a[o]*1000),99) < pad(Math.round(b[o]*1000),99)) ? -1 : ((pad(Math.round(a[o]*1000),99) > pad(Math.round(b[o]*1000),99)) ? 1 : 0));
   });
-  //if (o == "src10") {
-  //  for (var row in sa) {
-  //    if (sa[row]['position'] == 'QB') {
-  //      $('#output').append(sa[row]['name']+'::'+sa[row][o]+'<br>');
-  //    }
-  //  }
-  //}
   $('#output').append('END sortArray()<br>');
 } //sortArray
 
