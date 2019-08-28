@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="jquery-3.1.1.js"></script>
+  <script src="jquery-csv.js"></script>
+  <script src="fsda.js"></script>
+</head>
+<body>
+<div id="dView">
+  <div id="dFileIn"><input type="file" name="rankcsv" id="rankcsv"></div>
+  <br>
+  <div id="fileStats"></div>
+  <br>
+  <a id="aSourceWeights" href="#">Source Weights</a>
+  &nbsp;|&nbsp;
+  <a id="aDraftTool" href="#">Draft Tool</a>
+  <hr>
+</div>
+<div id="dPlayerPosition">
+  <input type="text" name="srchbox" id="srchbox" size=50>
+  <br><br>
+  <table id="tLastAction" border="1"><tr>
+    <td id="tdLastAction1"></td>
+    <td id="tdLastAction2"></td>
+    <td id="tdLastAction3"></td>
+    <td id="tdLastAction4"></td>
+    <td id="tdLastAction5"></td>
+  </tr></table>
+  <hr>
+  <b>SEARCH RESULTS</b>
+  <table id="tSearchResults" border="1">
+    <thead></thead>
+    <tbody><tr></tr></tbody>
+  </table>
+  <hr>
+  <b>MY TEAM</b>
+  <table id="tStatusM" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>AVAILABLE</b>
+  <table id="tStatusA" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+  <b>TAKEN</b>
+  <table id="tStatusT" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+</div>
+<div id="dPlayerRank">
+  <b>RANKS</b>
+  <table id="tRanks" border="1">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+  <hr>
+</div>
+<hr><input type="button" onClick="resetStatus()" value="Reset">
+<hr><div id="output"></div>
+</body>
+</html>
