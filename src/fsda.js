@@ -28,7 +28,7 @@ $(function() {
 });
 
 ////////////////////////////////////////////////////////////////////////////////////
-// Display
+// Display (both)
 ////////////////////////////////////////////////////////////////////////////////////
 
 function prepareTables() {
@@ -124,7 +124,7 @@ function getPositionRow(c, p, s) {
   if (p['status'] != "A") {
     ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
   }
-  ret += ((s == 1) ? p.posrk : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+  ret += ((s == 1) ? p.calcavg : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
   return ret;
 } //getPositionRow
 
@@ -145,7 +145,7 @@ function getRanksRow(p, pos, c) {
     for (var src in sources) {
       if (src != '0') {
         if (p['src'+src]) {
-          ret += '<td align="center">' + p['src'+src] + '</td>';
+          ret += '<td align="center">' + p['src'+src] + '::' + p['srcposrk'+src] + '</td>';
         } else {
           ret += '<td></td>';
         }
@@ -218,12 +218,7 @@ function changeStatus(u, s) {
 function changeWeight(s) {
   var newwt = $('#wt' + s).val();
   sources[s]['weight'] = newwt;
-  for (var p in players) {
-    calcAvg(players[p]);
-  }
-  sortArray(players, 'calcavg');
-  rankPlayers();
-  sortArray(players, 'orderby');
+  rerankPlayers();
   displayPlayers($('#sFilterRanks').val());
   setCookie('src'+s, newwt);
 } //changeWeight
@@ -234,13 +229,10 @@ function changeUserRank(u) {
     if (players[row]['unq'] == u) {
       $('#output').append('updating ' + players[row]['unq'] + '[src0]=' + newrk + '<br>');
       players[row]['src0'] = newrk;
-      calcAvg(players[row]);
       setCookie('Rank'+players[row]['unq'], newrk);
     }
   }
-  sortArray(players, 'calcavg');
-  rankPlayers();
-  sortArray(players, 'orderby');
+  rerankPlayers();
   displayPlayers($('#sFilterRanks').val());
 } //changeUserRank
 
@@ -363,6 +355,9 @@ function getSources() {
     colcnt++;
   }
   //sources.shift();
+  for (var s in sources) {
+    $('#output').append(sources[s]['name'] + '<br>');
+  }
   $('#output').append('END getSources(' + sources.length + ')<br>');
 } //getSources
 
@@ -390,69 +385,118 @@ function arrayToObject() {
     }
   }
   players.shift();
-  producePositionRank();
-  for (var row in playerArray) {
-    calcAvg(players[players.length-1]);
-  }
-  sortArray(players, 'calcavg');
-  //rankPlayers();
-  //sortArray(players, 'orderby');
+  rerankPlayers();
   $('#output').append('playerArray.length=' + playerArray.length + '<br>');
   $('#output').append('players.length=' + players.length + '<br>');
   $('#fileStats').append('Imported ' + players.length + ' player(s)');
   $('#output').append('END arrayToObject()<br>');
 } //arrayToObject
 
+function rerankPlayers() {
+  producePositionRank();
+  calcAvg();
+  sortArray(players, 'calcavg');
+  rankPlayers();
+} //rerankPlayers
+
 function producePositionRank() {
+  $('#output').append('producePositionRank()<br>');
   for (var src in sources) {
     sortArray(players,'src'+src)
     for (var pos in positions) {
       positions[pos]['cnt'] = 0;
     }
     for (var p in players) {
-      positions[players[p]['position']]['cnt'] = positions[players[p]['position']]['cnt']+1;
-      players[p]['srcposrk'+src] = positions[players[p]['position']]['cnt']
+      if ($.isNumeric(players[p]['src'+src])) {
+        positions[players[p]['position']]['cnt'] = positions[players[p]['position']]['cnt']+1;
+        players[p]['srcposrk'+src] = positions[players[p]['position']]['cnt']
+        //if (sources[src]['name'] == "ffc" && players[p]['position'] == 'QB') {
+        //  $('#output').append(players[p]['name']+'[srcposrk'+src+']='+players[p]['srcposrk'+src]+'<br>');
+        //}
+      }
     }    
   }
+  $('#output').append('END producePositionRank()<br>');
 } //producePositionRank
 
 function calcAvg(p) {
-  var srccnt = 0;
-  var srcwt = 0;
-  var srcval = 0;
-  for (var src in sources) {
-    if ($.isNumeric(p['srcposrk'+src]) && $.isNumeric(sources[src]['weight'])) {
-      srccnt++;
-      srcwt += Math.round(1000*sources[src]['weight'])/1000;
-      srcval += p['srcposrk'+src]*sources[src]['weight'];
+  for (var row in players) {
+    p = players[row]
+    var srcwt = 0;
+    var srcval = 0;
+    for (var src in sources) {
+      if ($.isNumeric(p['src'+src]) && $.isNumeric(sources[src]['weight'])) {
+        srcwt += Math.round(1000*sources[src]['weight'])/1000;
+        srcval += p['srcposrk'+src]*sources[src]['weight'];
+        //if (p['name'] == 'Andrew Luck') {
+        //  $('#output').append('calcAvg::'+sources[src]['name']+'::'+sources[src]['weight']+'::'+p['srcposrk'+src]+'<br>');
+        //}
+      }
     }
+    p['calcavg'] = srcval/srcwt;
+    //$('#output').append('calcAvg::'+p['name']+'::'+p['calcavg']+'<br>');
   }
-  p['calcavg'] = srcval/srcwt;
 } //calcAvg
 
+function pad(n, width, z) {
+  z = z || '0'
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+} //pad
+
 function sortArray(sa, o) {
-  $('#output').append('sortArray()<br>');
+  //$('#output').append('sortArray('+sources[o.replace('src','')]['name']+','+o+')<br>');
+  $('#output').append('sortArray('+o+')<br>');
   sa.sort(function(a,b) {
-    return ((a[o] < b[o]) ? -1 : ((a[o] > b[o]) ? 1 : 0));
+    nullpad = pad('0',99)
+    if (isNaN(a)) {
+      apad = pad('9',99,'9')
+    } else {
+      apad = pad(Math.round(a[o]*1000),99,'0')
+    }
+    if (isNaN(b)) {
+      bpad = pad('9',99,'9')
+    } else {
+      bpad = pad(Math.round(b[o]*1000),99,'0')
+    }
+    //return ((pad(Math.round(a[o]*1000),99) < pad(Math.round(b[o]*1000),99)) ? -1 : ((pad(Math.round(a[o]*1000),99) > pad(Math.round(b[o]*1000),99)) ? 1 : 0));
+    if (apad == bpad) {
+      return 0;
+    } else if (apad == nullpad) {
+      return -1;
+    } else if (apad < bpad) {
+      return -1;
+    } else if (apad > bpad) {
+      return 1;
+    } else {
+      return 0;
+    }
   });
+  //if (o == "src10") {
+  //  for (var row in sa) {
+  //    if (sa[row]['position'] == 'QB') {
+  //      $('#output').append(sa[row]['name']+'::'+sa[row][o]+'<br>');
+  //    }
+  //  }
+  //}
   $('#output').append('END sortArray()<br>');
 } //sortArray
 
-//function rankPlayers() {
-//  $('#output').append('rankPlayers()<br>');
-//  var curcnt = 0;
-//  for (var pos in positions) {
-//    positions[pos]['cnt'] = 0;
-//  }
-//  for (var p in players) {
-//    curcnt = positions[players[p]['position']]['cnt']+1;
-//    positions[players[p]['position']]['cnt'] = curcnt;
-//    players[p]['rank'] = curcnt;
-//    players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
-//    players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
-//  }
-//  $('#output').append('END rankPlayers()<br>');
-//} //rankPlayers
+function rankPlayers() {
+  $('#output').append('rankPlayers()<br>');
+  var curcnt = 0;
+  for (var pos in positions) {
+    positions[pos]['cnt'] = 0;
+  }
+  for (var p in players) {
+    curcnt = positions[players[p]['position']]['cnt']+1;
+    positions[players[p]['position']]['cnt'] = curcnt;
+    players[p]['rank'] = curcnt;
+    players[p]['posrk'] = players[p]['position'] + players[p]['rank'];
+    players[p]['orderby'] = ("00"+players[p]['rank']).slice(-3) + ("0"+positions[players[p]['position']]['Rank']).slice(-2);
+  }
+  $('#output').append('END rankPlayers()<br>');
+} //rankPlayers
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Cookies
