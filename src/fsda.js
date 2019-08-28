@@ -128,7 +128,7 @@ function getDraftToolRow(c, p, s) {
   if (p['status'] != "A") {
     ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
   }
-  ret += ((s == 1) ? p.calcavg : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+  ret += ((s == 1) ? p.rank : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
   return ret;
 } //getDraftToolRow
 
@@ -170,9 +170,9 @@ function toggleView(w) {
   setCookie("selectedView", selectedView);
   if (w == "p") {
     $('#dPlayerRank').hide();
-    $('#dPlayerPosition').show();
+    $('#dSelectionHistory').show();
   } else {
-    $('#dPlayerPosition').hide();
+    $('#dSelectionHistory').hide();
     $('#dPlayerRank').show();
   }
   $('#output').append('END toggleView(' + selectedView + ')<br>');
@@ -359,9 +359,6 @@ function getSources() {
     colcnt++;
   }
   //sources.shift();
-  for (var s in sources) {
-    $('#output').append(sources[s]['name'] + '<br>');
-  }
   $('#output').append('END getSources(' + sources.length + ')<br>');
 } //getSources
 
