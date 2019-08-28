@@ -245,6 +245,16 @@ function filterRanks() {
   displayPlayers(fltr);
 } //filterRanks
 
+function resetStatus() {
+  if (confirm("Set all players to available?")) {
+    for (var p in players) {
+      players[p]['status'] = 'A';
+    }
+    displayPlayers("All");
+    $('#tLastAction').empty();
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 // Load / Process file
 ////////////////////////////////////////////////////////////////////////////////////
