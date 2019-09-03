@@ -128,7 +128,7 @@ function getDraftToolRow(c, p, s) {
   if (p['status'] != "A") {
     ret += icn.replace('ICON','clear.jpg').replace('STATUS','A');
   }
-  ret += ((s == 1) ? p.rank : p.rank) + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
+  ret += ((s == 1) ? p.position : "") + p.rank + '&nbsp;' + p.name + '&nbsp;(<i>' + p.team + '</i>)</td></tr>';
   return ret;
 } //getDraftToolRow
 
@@ -203,6 +203,7 @@ function changeStatus(u, s) {
       $('#output').append('updaing ' + players[row]['name'] + '<br>');
       var os = players[row]['status'];
       players[row]['status'] = s;
+      displayDraftCnt();
       setCookie('Status'+players[row]['unq'], s);
       $('#tdLastAction5').html($('#tdLastAction4').html());
       $('#tdLastAction4').html($('#tdLastAction3').html());
@@ -245,14 +246,37 @@ function filterRanks() {
   displayPlayers(fltr);
 } //filterRanks
 
+function displayDraftCnt() {
+  var draftcnt = 0;
+  for (var row in players) {
+    if (players[row]['status'] != "A") {
+      draftcnt++;
+    }
+  }
+  $('#draftCnt').html(draftcnt+" player"+(draftcnt == 1 ? "" : "s")+" selected");
+}
+
 function resetStatus() {
   if (confirm("Set all players to available?")) {
     for (var p in players) {
       players[p]['status'] = 'A';
+      setCookie('Status'+players[p]['unq'], 'A');
     }
     displayPlayers("All");
     $('#tLastAction').empty();
+    displayDraftCnt();
   }
+}
+
+function outputShowHide() {
+  if ($('#output').is(':visible')) {
+    $('#output').hide();
+    $('#outputShowHide').val('Show');
+  } else {
+    $('#output').show();
+    $('#outputShowHide').val('Hide');
+  }
+  
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
