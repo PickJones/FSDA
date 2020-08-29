@@ -7,6 +7,7 @@ var selectedView = getCookie("selectedView") || "r";
 var playerArray = [[]];
 var players = [{}];
 var positions = {};
+var teams = [];
 var sources = {};
 var nonDefaultPositionCnt = 0;
 var defaultPositionRank = {
@@ -38,9 +39,15 @@ function prepareTables() {
   //source weights
   var rth = '<tr>';
   rth += '<th valign="top" align="center"><b>Name</b></th>';
-  rth += '<th valign="top" align="center"><b>Team</b></th>';
+  rth += '<th valign="top" align="center"><b>Team</b>';
+  rth += "<br><select id=\"sFilterTeam\" onchange=\"filterRanks()\">";
+  rth += '<option value="All">All</option>';
+  for (var team in teams.sort()) {
+    rth += '<option value="' + teams[team] + '">' + teams[team] + '</option>';
+  }
+  rth += '</select></th></th>';
   rth += '<th align="center"><b>Position</b>';
-  rth += "<br><select id=\"sFilterRanks\" onchange=\"filterRanks()\">";
+  rth += "<br><select id=\"sFilterPos\" onchange=\"filterRanks()\">";
   rth += '<option value="All">All</option>';
   for (var pos in positions) {
     rth += '<option value="' + pos + '">' + pos + '</option>';
@@ -85,8 +92,8 @@ function prepareTables() {
   $('#output').append('END prepareTables()<br>');
 } //prepareTables
 
-function displayPlayers(spos) {
-  $('#output').append('displayPlayers(' + players.length + ')<br>');
+function displayPlayers(spos, stm) {
+  $('#output').append('displayPlayers(' + players.length + ',' + spos + ',' + stm + ')<br>');
   for (var pos in positions) {
     $('#tStatusA' + pos + ' tbody').empty();
     positions[pos]['A']=0;
@@ -101,7 +108,7 @@ function displayPlayers(spos) {
   for (var row in players) {
     positions[players[row].position][players[row].status]++;
     $('#tStatus' + players[row].status + players[row].position + ' tbody').append(getDraftToolRow(positions[players[row].position][players[row].status], players[row], 0));
-    rrow = getSourceWeightRow(players[row],spos,rcnt);
+    rrow = getSourceWeightRow(players[row],spos,stm,rcnt);
     $('#tRanks tbody').append(rrow);
     if (rrow != '') { rcnt++; }
   }
@@ -132,9 +139,9 @@ function getDraftToolRow(c, p, s) {
   return ret;
 } //getDraftToolRow
 
-function getSourceWeightRow(p, pos, c) {
+function getSourceWeightRow(p, pos, tm, c) {
   var ret = '';
-  if (pos == "All" || pos == p['position']) {
+  if ((pos == "All" || pos == p['position']) && (tm == "All" || tm == p['team'])) {
     if ( !(c%2)) { 
       ret += '<tr bgcolor="#d3d3d3">'; 
     } else {
@@ -213,7 +220,7 @@ function changeStatus(u, s) {
     }
   }
   setTimeout(function() {
-    displayPlayers($('#sFilterRanks').val());
+    displayPlayers($('#sFilterPos').val(),$('#sFilterTeam').val());
   },500);
   $('#srchbox').val('');
   doSearch('');
@@ -224,7 +231,7 @@ function changeWeight(s) {
   var newwt = $('#wt' + s).val();
   sources[s]['weight'] = newwt;
   rerankPlayers();
-  displayPlayers($('#sFilterRanks').val());
+  displayPlayers($('#sFilterPos').val(),$('#sFilterTeam').val());
   setCookie('src'+s, newwt);
 } //changeWeight
 
@@ -238,12 +245,13 @@ function changeUserRank(u) {
     }
   }
   rerankPlayers();
-  displayPlayers($('#sFilterRanks').val());
+  displayPlayers($('#sFilterPos').val(),$('#sFilterTeam').val());
 } //changeUserRank
 
 function filterRanks() {
-  var fltr = $('#sFilterRanks').val();
-  displayPlayers(fltr);
+  var posfltr = $('#sFilterPos').val();
+  var tmfltr = $('#sFilterTeam').val();
+  displayPlayers(posfltr,tmfltr);
 } //filterRanks
 
 function displayDraftCnt() {
@@ -262,8 +270,10 @@ function resetStatus() {
       players[p]['status'] = 'A';
       setCookie('Status'+players[p]['unq'], 'A');
     }
-    displayPlayers("All");
+    displayPlayers("All","All");
     $('#tLastAction').empty();
+    $('#sFilterTeam').val("All")
+    $('#sFilterPos').val("All")
     displayDraftCnt();
   }
 }
@@ -307,6 +317,11 @@ function prepareDA(f) {
     arrayToObject();
   },tmout);
 
+  //get teams
+  setTimeout(function() {
+    getTeams();
+  },tmout);
+
   //inspect arry
   //inspectArray();
 
@@ -319,7 +334,7 @@ function prepareDA(f) {
   //show all the players
   tmout += 500;
   setTimeout(function() {
-    displayPlayers("All");
+    displayPlayers("All","All");
   },tmout);
 } //prepareDA
 
@@ -372,6 +387,24 @@ function getPositions() {
   $('#output').append('<br>');
   $('#output').append('END getPositions()<br>');
 } //getPositions
+
+function getTeams() {
+  tmcnt = 0;
+  for (var row in players) {
+    addtm = 1;
+    for (var t in teams) {
+      if (teams[t] == players[row].team) {
+        addtm = 0;
+        break;
+      }
+    }
+    if (addtm == 1) {
+      tmcnt++;
+      $('#output').append('adding team '+tmcnt+' '+players[row].team+'<br>');
+      teams.push(players[row].team)
+    }
+  }
+} //getTeams
 
 function getSources() {
   $('#output').append('getSources()<br>');
